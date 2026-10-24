@@ -14,14 +14,15 @@ const hasRealScore = ref(false)
 const mute = ref(false)
 const solo = ref(false)
 const title = computed(() => libraryStore.selectedSong?.title || '尚未选择曲目')
+const baseUrl = import.meta.env.BASE_URL
 
 function createApi() {
   if (!host.value || api.value) return
   try {
     api.value = new alphaTab.AlphaTabApi(host.value, {
-      core: { engine: 'svg', fontDirectory: '/font/' },
+      core: { engine: 'svg', fontDirectory: `${baseUrl}font/` },
       display: { scale: 1.05, staveProfile: 'scoretab' },
-      player: { enablePlayer: true, soundFont: '/soundfont/sonivox.sf2' },
+      player: { enablePlayer: true, soundFont: `${baseUrl}soundfont/sonivox.sf2` },
     })
     api.value.playerStateChanged.on((event) => scoreStore.setPlaying(event.state === alphaTab.synth.PlayerState.Playing))
     api.value.playerPositionChanged.on((event) => {
@@ -47,7 +48,7 @@ async function loadScore() {
       const bytes = await invoke<number[]>('read_binary', { path: `${song.rootPath}/${song.score}` })
       loaded = api.value.load(new Uint8Array(bytes))
     } else {
-      loaded = api.value.load('/demo/score.musicxml')
+      loaded = api.value.load(`${baseUrl}demo/score.musicxml`)
     }
     hasRealScore.value = loaded
   } catch (error) {

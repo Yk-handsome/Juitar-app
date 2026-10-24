@@ -1,6 +1,6 @@
 # Juitar 产品视觉与功能验收手册
 
-> 当前基线：`v0.0.3` · Vue 3 + TypeScript + Tauri + Rust + alphaTab
+> 当前基线：`v0.0.4` · Vue 3 + TypeScript + Tauri + Rust + alphaTab
 
 ## 1. 产品设计美学
 
@@ -79,6 +79,7 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 | v0.0.1 | `d4aab2f` | 统一版本基线；建立深色设计系统；加入响应式工作台、移动 Touch Bar、曲库抽屉和截图验收资产。 |
 | v0.0.2 | 待提交 | 增加 70% / 80% / 100% 练习速度预设；锚点验收进入真实 Markdown 预览；补齐多首 MusicXML 实战夹具。 |
 | v0.0.3 | 待提交 | 补齐曲面屏安全边距、触控目标和移动端触摸行为；更新 Android 工具链准备状态。 |
+| v0.0.4 | 待提交 | 让谱面字体、音色和演示曲谱使用 Vite base URL，兼容 Android asset 离线加载；开始 Tauri Android 初始化。 |
 
 ## 6. 交付路径
 
