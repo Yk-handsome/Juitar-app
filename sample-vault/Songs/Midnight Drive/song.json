@@ -1,0 +1,17 @@
+{
+  "id": "midnight-drive",
+  "title": "Midnight Drive",
+  "artist": "Original Study",
+  "tags": [
+    "rock",
+    "alternate-picking"
+  ],
+  "tuning": "E Standard",
+  "capo": 0,
+  "defaultTempo": 112,
+  "score": "score.musicxml",
+  "notes": "notes.md",
+  "practiceLog": "practice-log.md",
+  "rootPath": "Songs/Midnight Drive",
+  "scoreType": "alphaTab"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "maple-room-etude",
+  "title": "Maple Room Etude",
+  "artist": "Original Study",
+  "tags": [
+    "fingerstyle",
+    "arpeggio"
+  ],
+  "tuning": "DADGAD",
+  "capo": 0,
+  "defaultTempo": 78,
+  "score": "score.musicxml",
+  "notes": "notes.md",
+  "practiceLog": "practice-log.md",
+  "rootPath": "Songs/Maple Room Etude",
+  "scoreType": "alphaTab"
+}

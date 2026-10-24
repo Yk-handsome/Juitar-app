@@ -1,0 +1,17 @@
+{
+  "id": "neon-skyline-solo",
+  "title": "Neon Skyline Solo",
+  "artist": "Original Study",
+  "tags": [
+    "solo",
+    "bending"
+  ],
+  "tuning": "Eb Standard",
+  "capo": 0,
+  "defaultTempo": 96,
+  "score": "score.musicxml",
+  "notes": "notes.md",
+  "practiceLog": "practice-log.md",
+  "rootPath": "Songs/Neon Skyline Solo",
+  "scoreType": "alphaTab"
+}

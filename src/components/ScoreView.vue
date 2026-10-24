@@ -19,7 +19,7 @@ function createApi() {
   if (!host.value || api.value) return
   try {
     api.value = new alphaTab.AlphaTabApi(host.value, {
-      core: { engine: 'svg' },
+      core: { engine: 'svg', fontDirectory: '/font/' },
       display: { scale: 1.05, staveProfile: 'scoretab' },
       player: { enablePlayer: true, soundFont: '/soundfont/sonivox.sf2' },
     })

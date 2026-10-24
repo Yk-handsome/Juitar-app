@@ -21,8 +21,9 @@ export const useLibraryStore = defineStore('library', () => {
   })
   async function loadVault(vaultPath: string) { songs.value = await scanSongs(vaultPath) }
   async function selectSong(song: Song) {
+    const note = await readNote(song)
+    notes.value[song.id] = note
     selectedSong.value = song
-    notes.value[song.id] = await readNote(song)
     const scoreStore = useScoreStore()
     scoreStore.openSong(song)
   }
