@@ -1,0 +1,13 @@
+{
+  "id": "hotel-california",
+  "title": "Hotel California",
+  "artist": "Eagles",
+  "tags": ["rock", "solo"],
+  "tuning": "Standard",
+  "capo": 0,
+  "defaultTempo": 90,
+  "score": "score.musicxml",
+  "notes": "notes.md",
+  "practiceLog": "practice-log.md",
+  "scoreType": "alphaTab"
+}
