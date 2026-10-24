@@ -16,8 +16,13 @@ export const useScoreStore = defineStore('score', () => {
   function togglePlayback() { isPlaying.value = !isPlaying.value; scoreApi.value?.playPause?.() }
   function setPlaying(value: boolean) { isPlaying.value = value }
   function changeSpeed(delta: number) { speed.value = Math.min(150, Math.max(50, speed.value + delta)) }
+  function setSpeed(value: number) { speed.value = Math.min(150, Math.max(50, value)) }
+  function cyclePracticeSpeed() {
+    const presets = [70, 80, 100]
+    setSpeed(presets[(presets.indexOf(speed.value) + 1) % presets.length] ?? 70)
+  }
   function jumpToMeasure(measure: number, end?: number) { currentMeasure.value = measure; loop.value = end ? { start: measure, end } : loop.value; scoreApi.value?.scrollToMeasure?.(measure) }
   function setLoop(start: number, end: number) { loop.value = { start: Math.min(start, end), end: Math.max(start, end) }; currentMeasure.value = loop.value.start }
   function resetLoop() { currentMeasure.value = loop.value?.start || 1; scoreApi.value?.stop?.(); isPlaying.value = false; scoreApi.value?.scrollToMeasure?.(currentMeasure.value) }
-  return { currentSong, isPlaying, speed, speedLabel, currentMeasure, loop, isReady, openSong, setApi, togglePlayback, setPlaying, changeSpeed, jumpToMeasure, setLoop, resetLoop }
+  return { currentSong, isPlaying, speed, speedLabel, currentMeasure, loop, isReady, openSong, setApi, togglePlayback, setPlaying, changeSpeed, setSpeed, cyclePracticeSpeed, jumpToMeasure, setLoop, resetLoop }
 })

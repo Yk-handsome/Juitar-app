@@ -85,7 +85,7 @@ onUnmounted(() => {
     <nav v-if="isMobile" class="mobile-touchbar" aria-label="练习控制">
       <button class="touchbar-secondary" @click="scoreStore.resetLoop"><span>↺</span><small>回到循环</small></button>
       <button class="touchbar-play" :class="{ playing: scoreStore.isPlaying }" @click="scoreStore.togglePlayback"><span>{{ scoreStore.isPlaying ? 'Ⅱ' : '▶' }}</span></button>
-      <button class="touchbar-secondary" @click="scoreStore.changeSpeed(-5)"><span>{{ scoreStore.speed }}%</span><small>速度</small></button>
+      <button class="touchbar-secondary" @click="scoreStore.cyclePracticeSpeed"><span>{{ scoreStore.speed }}%</span><small>速度预设</small></button>
       <button class="touchbar-secondary" @click="scoreStore.setLoop(scoreStore.currentMeasure, scoreStore.currentMeasure + 4)"><span>A—B</span><small>循环</small></button>
     </nav>
     <footer class="status-bar">

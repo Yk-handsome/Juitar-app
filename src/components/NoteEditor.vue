@@ -11,7 +11,7 @@ import { useScoreStore } from '../stores/scoreStore'
 const appStore = useAppStore()
 const libraryStore = useLibraryStore()
 const scoreStore = useScoreStore()
-const mode = ref<'edit' | 'preview'>('edit')
+const mode = ref<'edit' | 'preview'>(new URLSearchParams(window.location.search).get('showcase') === 'anchor' ? 'preview' : 'edit')
 const localContent = ref('')
 const saveTimer = ref<number | undefined>(undefined)
 const currentSong = ref<Song | null>(null)
