@@ -1,4 +1,4 @@
-const VERSION = '0.0.9'
+const VERSION = '0.0.10'
 const alphaTab = window.alphaTab
 const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 760
 const assetUrl = (path) => new URL(path, document.baseURI).href
@@ -40,8 +40,9 @@ app.innerHTML = '\
   </div>\
   <button class="note-fab" id="noteFab" aria-label="打开笔记">📝</button>\
   <div class="drawer-scrim" id="drawerScrim" hidden></div>\
-  <aside class="library-drawer" id="libraryDrawer" aria-hidden="true"><div class="drawer-head"><strong>我的谱夹</strong><button class="close-button" id="closeLibrary" aria-label="关闭">×</button></div><p class="drawer-hint">导入的图片、PDF 和 GP/MusicXML 会显示在这里。</p><div class="library-list" id="libraryList"></div></aside>\
-  <aside class="note-drawer" id="noteDrawer" aria-hidden="true"><div class="drawer-handle" id="noteHandle"></div><div class="note-head"><strong>《<span id="noteSongTitle"></span>》笔记</strong><span id="noteSaved">自动保存</span></div><textarea id="noteEditor" placeholder="记录这首曲子的指法、难点或想法…&#10;&#10;可写 [m:12] 跳到第 12 小节"></textarea><div class="note-footer"><button class="note-anchor" id="jumpAnchor">跳到笔记中的小节</button><span>点击遮罩或下滑收起</span></div></aside>'
+  <aside class="library-drawer" id="libraryDrawer" aria-hidden="true"><div class="drawer-head"><strong>我的谱夹</strong><button class="close-button" id="closeLibrary" aria-label="关闭">×</button></div><button class="new-song-button" id="newSongButton">＋ 新建曲子</button><p class="drawer-hint">导入图片、PDF、GP/MusicXML，或新建一份可直接查看的练习曲模板。</p><div class="library-list" id="libraryList"></div></aside>\
+  <aside class="note-drawer" id="noteDrawer" aria-hidden="true"><div class="drawer-handle" id="noteHandle"></div><div class="note-head"><strong>《<span id="noteSongTitle"></span>》笔记</strong><span id="noteSaved">自动保存</span></div><textarea id="noteEditor" placeholder="记录这首曲子的指法、难点或想法…&#10;&#10;可写 [m:12] 跳到第 12 小节"></textarea><div class="note-footer"><button class="note-anchor" id="jumpAnchor">跳到笔记中的小节</button><span>点击遮罩或下滑收起</span></div></aside>\
+  <div class="new-song-modal" id="newSongModal" hidden><div class="new-song-card"><div class="new-song-head"><strong>新建曲子</strong><button class="close-button" id="cancelNewSong" aria-label="关闭">×</button></div><p>先创建一份可直接查看的内置六线谱，之后也可以再导入 GP 或 MusicXML 替换。</p><label for="newSongName">曲名</label><input id="newSongName" type="text" maxlength="80" placeholder="例如：我的指弹练习" /><div class="new-song-actions"><button class="secondary-button" id="cancelNewSongBottom">取消</button><button class="primary-button" id="createNewSong">创建并打开</button></div></div></div>'
 
 const els = {
   title: document.querySelector('#songTitle'), noteTitle: document.querySelector('#noteSongTitle'), host: document.querySelector('#scoreHost'),
@@ -49,10 +50,12 @@ const els = {
   player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'),
   library: document.querySelector('#libraryDrawer'), libraryList: document.querySelector('#libraryList'), scrim: document.querySelector('#drawerScrim'),
   noteDrawer: document.querySelector('#noteDrawer'), noteEditor: document.querySelector('#noteEditor'), noteSaved: document.querySelector('#noteSaved'),
+  newSongModal: document.querySelector('#newSongModal'), newSongName: document.querySelector('#newSongName'),
 }
 
 function escapeHtml(value) { return String(value).replace(/[&<>"]/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char] }) }
-function setTitle(title) { state.title = title || DEFAULT_TITLE; els.title.textContent = state.title; els.title.title = state.title; els.noteTitle.textContent = state.title; document.title = 'Juitar · ' + state.title }
+function noteStorageKey(title) { return 'juitar:note:v2:' + title }
+function setTitle(title) { state.title = title || DEFAULT_TITLE; state.note = localStorage.getItem(noteStorageKey(state.title)) || (state.title === DEFAULT_TITLE ? localStorage.getItem('juitar:note:v2') || '' : ''); els.title.textContent = state.title; els.title.title = state.title; els.noteTitle.textContent = state.title; if (els.noteEditor) els.noteEditor.value = state.note; document.title = 'Juitar · ' + state.title }
 function setStatus(text, error) { els.status.textContent = text; els.status.classList.toggle('error', Boolean(error)); els.status.classList.toggle('visible', Boolean(text)); clearTimeout(setStatus.timer); if (!error && text.indexOf('已') >= 0) setStatus.timer = setTimeout(function () { els.status.classList.remove('visible') }, 1800) }
 function revokeObjectUrl() { if (state.objectUrl) URL.revokeObjectURL(state.objectUrl); state.objectUrl = null }
 function setKind(kind) { state.kind = kind; els.player.hidden = !['alphatex', 'gp', 'musicxml'].includes(kind) }
@@ -86,6 +89,7 @@ function fileKind(file) {
   if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf'
   if (/\.(gp3|gp4|gp5|gpx)$/i.test(name)) return 'gp'
   if (/\.(xml|musicxml)$/i.test(name) || file.type.indexOf('xml') >= 0) return 'musicxml'
+  if (name.endsWith('.atex') || file.type === 'text/x-alphatex') return 'alphatex'
   return null
 }
 function clearScore() { revokeObjectUrl(); els.host.replaceChildren(); els.host.className = 'score-host'; state.ready = false; state.measure = 1 }
@@ -105,19 +109,24 @@ function showAlphaTabFile(file, kind) {
   clearScore(); setKind(kind); setTitle(file.name.replace(/\.[^.]+$/, '')); setStatus('正在渲染真实六线谱…')
   file.arrayBuffer().then(function (buffer) { state.api.load(new Uint8Array(buffer)) }).catch(function (error) { setStatus('导入失败：' + error.message, true) })
 }
+function showAlphaTexText(text, title) {
+  if (!state.api) return setStatus('当前页面未加载 alphaTab，请使用 npm run dev 或 APK', true)
+  setKind('alphatex'); setTitle(title); setStatus('正在渲染新建曲子…')
+  try { initializeAlphaTabApi(); state.api.tex(text) } catch (error) { setStatus('新建曲子失败：' + error.message, true) }
+}
 function handleFile(file, shouldStore) {
   if (!file) return
   const kind = fileKind(file)
   if (!kind) return setStatus('不支持此格式，请选择图片、PDF、GP3/4/5、GPX 或 MusicXML', true)
   if (shouldStore !== false) addToLibrary(file, kind)
-  if (kind === 'image') showImage(file); else if (kind === 'pdf') showPdf(file); else showAlphaTabFile(file, kind)
+  if (kind === 'image') showImage(file); else if (kind === 'pdf') showPdf(file); else if (kind === 'alphatex') file.text().then(function (text) { showAlphaTexText(text, file.name.replace(/\.atex$/i, '')) }); else showAlphaTabFile(file, kind)
 }
 function renderLibrary() {
   if (!state.library.length) {
     els.libraryList.innerHTML = '<div class="library-empty">还没有谱子<br><small>点击右上角“＋ 导入谱子”开始</small></div>'; return
   }
   els.libraryList.innerHTML = state.library.map(function (item) {
-    return '<button class="library-item" data-file-id="' + item.id + '"><span class="library-icon">' + (item.kind === 'image' ? '🖼️' : item.kind === 'pdf' ? '📄' : '🎼') + '</span><span class="library-copy"><strong>' + escapeHtml(item.name) + '</strong><small>' + item.kind.toUpperCase() + ' · ' + new Date(item.addedAt).toLocaleDateString('zh-CN') + '</small></span><span class="library-arrow">›</span></button>'
+    return '<button class="library-item" data-file-id="' + item.id + '"><span class="library-icon">' + (item.kind === 'image' ? '🖼️' : item.kind === 'pdf' ? '📄' : '🎼') + '</span><span class="library-copy"><strong>' + escapeHtml(item.name.replace(/\.atex$/i, '')) + '</strong><small>' + item.kind.toUpperCase() + ' · ' + new Date(item.addedAt).toLocaleDateString('zh-CN') + '</small></span><span class="library-arrow">›</span></button>'
   }).join('')
   els.libraryList.querySelectorAll('[data-file-id]').forEach(function (button) { button.addEventListener('click', async function () {
     const item = state.library.find(function (entry) { return entry.id === button.dataset.fileId }); const blob = item && await readBlob(item.id)
@@ -125,25 +134,37 @@ function renderLibrary() {
     handleFile(new File([blob], item.name, { type: blob.type }), false); closeLibrary()
   }) })
 }
-function createAlphaTab() {
+function openNewSong() {
+  closeLibrary(); els.newSongModal.hidden = false; els.newSongName.value = ''; requestAnimationFrame(function () { els.newSongName.focus() })
+}
+function closeNewSong() { els.newSongModal.hidden = true }
+function createNewSong() {
+  const title = els.newSongName.value.trim() || '我的新曲子'
+  const tex = DEFAULT_TEX.replace("\\title 'Californian Evening'", "\\title '" + title.replace(/'/g, "\\'") + "'")
+  const file = new File([tex], title + '.atex', { type: 'text/x-alphatex' })
+  closeNewSong(); addToLibrary(file, 'alphatex'); showAlphaTexText(tex, title); setStatus('新曲子已创建')
+}
+function initializeAlphaTabApi() {
   if (!alphaTab || !alphaTab.AlphaTabApi) {
     setStatus('直接打开 HTML 时无法启动 alphaTab，请使用 npm run dev 或 APK', true)
     els.host.innerHTML = '<div class="runtime-help"><strong>需要本地运行环境</strong><p>图片和 PDF 可以直接导入；GP/MusicXML 与默认六线谱请通过 APK 或 <code>npm run dev</code> 打开。</p></div>'; setKind('alphatex'); return
   }
   try {
+    if (state.api && typeof state.api.destroy === 'function') state.api.destroy()
+    els.host.replaceChildren()
     setKind('alphatex')
     state.api = new alphaTab.AlphaTabApi(els.host, {
       core: { engine: 'svg', scriptFile: assetUrl('alphatab/alphaTab.min.js'), fontDirectory: assetUrl('font/') },
       display: { scale: isMobile ? 0.86 : 1.05, staveProfile: 'tab', layoutMode: 'page' },
       player: { enablePlayer: true, soundFont: assetUrl('soundfont/sonivox.sf2') },
     })
-    state.api.renderFinished.on(function () { state.ready = true; els.host.classList.add('ready'); setStatus('真实六线谱已渲染') })
+    state.api.renderFinished.on(function () { if (!['alphatex', 'gp', 'musicxml'].includes(state.kind)) return; state.ready = true; els.host.classList.add('ready'); setStatus('真实六线谱已渲染') })
     state.api.error.on(function (error) { setStatus('谱面错误：' + (error.message || error), true) })
     state.api.playerStateChanged.on(function (event) { state.playing = event.state === alphaTab.synth.PlayerState.Playing; els.play.classList.toggle('playing', state.playing); els.play.querySelector('span').textContent = state.playing ? 'Ⅱ' : '▶' })
     state.api.playerPositionChanged.on(function (event) { if (event.currentTick <= 0 || !state.api.score || !state.api.score.masterBars.length) return; state.measure = Math.max(1, Math.min(state.api.score.masterBars.length, Math.floor((event.currentTick / Math.max(event.endTick, 1)) * state.api.score.masterBars.length) + 1)) })
-    state.api.tex(DEFAULT_TEX)
   } catch (error) { setStatus('谱面初始化失败：' + error.message, true) }
 }
+function createAlphaTab() { initializeAlphaTabApi(); if (state.api) state.api.tex(DEFAULT_TEX) }
 function setBpm(value) { state.bpm = Math.max(40, Math.min(220, value)); els.bpm.textContent = state.bpm + ' BPM'; if (state.api) state.api.playbackSpeed = state.bpm / 90 }
 function jumpToMeasure(start) {
   const index = Math.max(1, Number(start) || 1); state.measure = index
@@ -152,7 +173,7 @@ function jumpToMeasure(start) {
   closeNotes()
 }
 function parseAnchor() { const match = state.note.match(/\[m:(\d+)\]/); return match ? Number(match[1]) : null }
-function saveNote() { state.note = els.noteEditor.value; localStorage.setItem('juitar:note:v2', state.note); els.noteSaved.textContent = '已保存'; clearTimeout(saveNote.timer); saveNote.timer = setTimeout(function () { els.noteSaved.textContent = '自动保存' }, 900) }
+function saveNote() { state.note = els.noteEditor.value; localStorage.setItem(noteStorageKey(state.title), state.note); els.noteSaved.textContent = '已保存'; clearTimeout(saveNote.timer); saveNote.timer = setTimeout(function () { els.noteSaved.textContent = '自动保存' }, 900) }
 function openNotes() { els.noteDrawer.classList.add('open'); els.noteDrawer.setAttribute('aria-hidden', 'false'); els.scrim.hidden = false; requestAnimationFrame(function () { els.noteEditor.focus({ preventScroll: true }) }) }
 function closeNotes() { els.noteDrawer.classList.remove('open'); els.noteDrawer.setAttribute('aria-hidden', 'true'); if (!els.library.classList.contains('open')) els.scrim.hidden = true }
 function openLibrary() { els.library.classList.add('open'); els.library.setAttribute('aria-hidden', 'false'); els.scrim.hidden = false }
@@ -175,6 +196,11 @@ document.querySelector('#importButton').addEventListener('click', function () { 
 els.file.addEventListener('change', function (event) { handleFile(event.target.files && event.target.files[0]); event.target.value = '' })
 document.querySelector('#libraryButton').addEventListener('click', openLibrary)
 document.querySelector('#closeLibrary').addEventListener('click', closeLibrary)
+document.querySelector('#newSongButton').addEventListener('click', openNewSong)
+document.querySelector('#cancelNewSong').addEventListener('click', closeNewSong)
+document.querySelector('#cancelNewSongBottom').addEventListener('click', closeNewSong)
+document.querySelector('#createNewSong').addEventListener('click', createNewSong)
+els.newSongName.addEventListener('keydown', function (event) { if (event.key === 'Enter') createNewSong() })
 document.querySelector('#noteFab').addEventListener('click', openNotes)
 document.querySelector('#drawerScrim').addEventListener('click', function () { closeLibrary(); closeNotes() })
 document.querySelector('#playButton').addEventListener('click', function () { if (state.api) state.api.playPause() })

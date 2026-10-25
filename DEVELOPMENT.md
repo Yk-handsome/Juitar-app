@@ -18,6 +18,12 @@ index.html
 - 笔记：默认隐藏的当前曲目底部抽屉，自动保存文本；点击 [m:8] 回到谱面对应小节。
 - Android：android-lite/MainActivity.java 提供 WebView、资源拦截和系统文件选择器。
 
+参考项目位于 `F:/Code_listary/Juitar/reference project`：
+
+- `tuxguitar`：Java/Android 吉他谱编辑器和播放器，参考曲库抽屉、文件浏览、谱面滚动与播放入口的交互方式。
+- `vexflow`：浏览器 SVG/Canvas 五线谱渲染器，参考其固定版本、渲染器和可测试 HTML 示例组织方式；Juitar 当前 GP/MusicXML 主渲染仍使用本地 alphaTab。
+- `NoteLite`：Java 谱面/图像处理项目，参考导入文件、谱面缩放和离线数据处理思路；它不是 Juitar 的运行时依赖。
+
 ## 2. 开发环境
 
 ### Windows
@@ -155,10 +161,11 @@ adb logcat -s JuitarWeb
 
 1. 点击右上角“＋ 导入谱子”，选择图片、PDF、GP3/GP4/GP5、GPX 或 MusicXML。
 2. 图片和 PDF 直接全宽展示；GP/MusicXML 通过 alphaTab 渲染真实六线谱。
-3. 导入的文件会写入 IndexedDB，文件名称和类型同步保存在 localStorage 的谱夹列表中。
-4. 点击右下角 📝 打开当前曲目的底部笔记抽屉，输入内容后自动保存。
-5. 在笔记中写入 `[m:12]`，点击“跳到笔记中的小节”即可回到第 12 小节。
-6. 只有 AlphaTex、GP 和 MusicXML 显示播放/BPM 悬浮药丸；图片和 PDF 不显示播放控件。
+3. 点击谱夹里的“＋ 新建曲子”，输入曲名即可创建一份内置 AlphaTex 六线谱模板；创建后立即打开并保存到谱夹。
+4. 导入的文件会写入 IndexedDB，文件名称和类型同步保存在 localStorage 的谱夹列表中。
+5. 点击右下角 📝 打开当前曲目的底部笔记抽屉，输入内容后自动保存。
+6. 在笔记中写入 `[m:12]`，点击“跳到笔记中的小节”即可回到第 12 小节。
+7. 只有 AlphaTex、GP 和 MusicXML 显示播放/BPM 悬浮药丸；图片和 PDF 不显示播放控件。
 
 ## 8. 测试和构建
 
@@ -190,14 +197,14 @@ powershell -ExecutionPolicy Bypass -File android-lite/build.ps1
 产物：
 
 ~~~text
-release-apk/Juitar-v0.0.9-arm64.apk
+release-apk/Juitar-v0.0.10-arm64.apk
 ~~~
 
 签名验证：
 
 ~~~powershell
 $bt = "$env:ANDROID_SDK_ROOT/build-tools/36.0.0"
-& "$bt/apksigner.bat" verify --verbose release-apk/Juitar-v0.0.9-arm64.apk
+& "$bt/apksigner.bat" verify --verbose release-apk/Juitar-v0.0.10-arm64.apk
 ~~~
 
 ## 9. 手机调试
@@ -211,7 +218,7 @@ adb devices -l
 安装和启动：
 
 ~~~powershell
-adb install -r release-apk/Juitar-v0.0.9-arm64.apk
+adb install -r release-apk/Juitar-v0.0.10-arm64.apk
 adb shell am force-stop com.juitar.app
 adb shell monkey -p com.juitar.app 1
 ~~~
@@ -260,7 +267,7 @@ git push origin v0.0.x
 - v0.0.6：最终 APK 和交付文档
 - v0.0.7：原生单页、真实 AlphaTex 六线谱
 - v0.0.8：Android 文件选择器、手机缩放和直接 HTML 兜底
-- v0.0.9：极简全屏谱夹、IndexedDB 导入、底部笔记抽屉和悬浮播放器
+- v0.0.10：极简全屏谱夹、IndexedDB 导入、底部笔记抽屉和悬浮播放器
 
 ## 12. 常见问题
 
@@ -270,7 +277,7 @@ git push origin v0.0.x
 
 ### 导入按钮无反应
 
-确认安装 v0.0.9 APK。Android 原生桥接必须包含 onShowFileChooser。
+确认安装 v0.0.10 APK。Android 原生桥接必须包含 onShowFileChooser。
 
 ### 真谱没有出现
 
