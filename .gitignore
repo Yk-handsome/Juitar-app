@@ -23,3 +23,5 @@ src-tauri/target
 *.njsproj
 *.sln
 *.sw?
+android-lite/build/
+release-apk/*.idsig

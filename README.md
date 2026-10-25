@@ -1,6 +1,6 @@
 # Juitar
 
-Juitar 是一个本地优先的吉他谱查看、练习和笔记工具。
+Juitar 是一个本地优先的极简手机吉他谱夹：全屏查看图片/PDF/GP/MusicXML，笔记只在需要时从底部抽屉打开。
 
 ## 快速开始
 
@@ -14,8 +14,8 @@ npm run dev -- --host 127.0.0.1
 ## 当前入口
 
 - `index.html`：单页 HTML 入口
-- `src/app.js`：原生 JavaScript、alphaTab、导入、笔记和练习控制
-- `src/style.css`：移动端全宽布局和桌面布局
+- `src/app.js`：原生 JavaScript、alphaTab、导入、谱夹、笔记抽屉和播放
+- `src/style.css`：全屏看谱、悬浮控件和抽屉布局
 - `android-lite/`：Android WebView 包装与 APK 构建脚本
 
 ## 开发文档

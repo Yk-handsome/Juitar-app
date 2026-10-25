@@ -8,14 +8,14 @@
 
 ~~~text
 index.html
-├── src/app.js       原生 DOM、alphaTab、导入、笔记、计时器和播放
-└── src/style.css    全宽移动布局、桌面布局和底部控制栏
+├── src/app.js       原生 DOM、alphaTab、导入、谱夹、底部笔记抽屉和播放
+└── src/style.css    全屏看谱布局、悬浮控件和抽屉样式
 ~~~
 
 核心视图：
 
 - 看谱：全宽显示图片谱、PDF 或 alphaTab 真六线谱。
-- 笔记：记录今日练琴、计时、历史打卡；点击 [m:8-12] 回到谱面并激活循环。
+- 笔记：默认隐藏的当前曲目底部抽屉，自动保存文本；点击 [m:8] 回到谱面对应小节。
 - Android：android-lite/MainActivity.java 提供 WebView、资源拦截和系统文件选择器。
 
 ## 2. 开发环境
@@ -151,18 +151,14 @@ adb logcat -s JuitarWeb
 - 画面中出现六条横线、TAB 标记和品格数字。
 - 不允许用数字矩阵、手绘横线或占位谱面代替 alphaTab。
 
-## 7. 笔记和练习
+## 7. 谱夹、笔记和播放
 
-底部切换到“笔记”：
-
-1. 编辑练习文本。
-2. 输入 [m:8-12] 标记难点。
-3. 点击“预览”。
-4. 点击预览中的小节胶囊回到谱面并激活循环。
-5. “开始计时”记录本次练习时长。
-6. “新建打卡”保存日期、曲目、目标速度和笔记。
-
-浏览器和 WebView 使用 localStorage 保存笔记与历史打卡。
+1. 点击右上角“＋ 导入谱子”，选择图片、PDF、GP3/GP4/GP5、GPX 或 MusicXML。
+2. 图片和 PDF 直接全宽展示；GP/MusicXML 通过 alphaTab 渲染真实六线谱。
+3. 导入的文件会写入 IndexedDB，文件名称和类型同步保存在 localStorage 的谱夹列表中。
+4. 点击右下角 📝 打开当前曲目的底部笔记抽屉，输入内容后自动保存。
+5. 在笔记中写入 `[m:12]`，点击“跳到笔记中的小节”即可回到第 12 小节。
+6. 只有 AlphaTex、GP 和 MusicXML 显示播放/BPM 悬浮药丸；图片和 PDF 不显示播放控件。
 
 ## 8. 测试和构建
 
@@ -194,14 +190,14 @@ powershell -ExecutionPolicy Bypass -File android-lite/build.ps1
 产物：
 
 ~~~text
-release-apk/Juitar-v0.0.8-arm64.apk
+release-apk/Juitar-v0.0.9-arm64.apk
 ~~~
 
 签名验证：
 
 ~~~powershell
 $bt = "$env:ANDROID_SDK_ROOT/build-tools/36.0.0"
-& "$bt/apksigner.bat" verify --verbose release-apk/Juitar-v0.0.8-arm64.apk
+& "$bt/apksigner.bat" verify --verbose release-apk/Juitar-v0.0.9-arm64.apk
 ~~~
 
 ## 9. 手机调试
@@ -215,7 +211,7 @@ adb devices -l
 安装和启动：
 
 ~~~powershell
-adb install -r release-apk/Juitar-v0.0.8-arm64.apk
+adb install -r release-apk/Juitar-v0.0.9-arm64.apk
 adb shell am force-stop com.juitar.app
 adb shell monkey -p com.juitar.app 1
 ~~~
@@ -238,11 +234,10 @@ adb logcat -s JuitarWeb
 
 每次 UI 修改后检查：
 
-1. 393×873 竖屏：无文字重叠、无左右分屏、底部控制栏不遮挡内容。
-2. 873×393 横屏：仍使用单列看谱 / 笔记视图。
-3. 1440×900 桌面：顶部、谱面和底部控制栏比例正常。
-4. alphaTab 显示六条谱线和品格数字。
-5. 图片、PDF、MusicXML 至少各验证一次。
+1. 393×873 竖屏：40px 顶栏、谱面全宽、没有左右分屏或打卡模块。
+2. 笔记抽屉默认隐藏，打开后占底部约 35%，关闭后恢复全屏看谱。
+3. alphaTab 显示六条谱线和品格数字，并触发 `renderFinished`。
+4. 图片、PDF、GP5、MusicXML 至少各验证一次；图片/PDF 不显示播放药丸。
 
 完整截图和验收手册见 PRODUCT_SHOWCASE.md。
 
@@ -265,6 +260,7 @@ git push origin v0.0.x
 - v0.0.6：最终 APK 和交付文档
 - v0.0.7：原生单页、真实 AlphaTex 六线谱
 - v0.0.8：Android 文件选择器、手机缩放和直接 HTML 兜底
+- v0.0.9：极简全屏谱夹、IndexedDB 导入、底部笔记抽屉和悬浮播放器
 
 ## 12. 常见问题
 
@@ -274,7 +270,7 @@ git push origin v0.0.x
 
 ### 导入按钮无反应
 
-确认安装 v0.0.8 APK。Android 原生桥接必须包含 onShowFileChooser。
+确认安装 v0.0.9 APK。Android 原生桥接必须包含 onShowFileChooser。
 
 ### 真谱没有出现
 
