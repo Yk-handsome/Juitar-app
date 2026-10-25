@@ -1,6 +1,6 @@
 # Juitar 产品视觉与功能验收手册
 
-> 当前基线：`v0.0.4` · Vue 3 + TypeScript + Tauri + Rust + alphaTab
+> 当前基线：`v0.0.5` · Vue 3 + TypeScript + Tauri + Rust + alphaTab
 
 ## 1. 产品设计美学
 
@@ -46,6 +46,12 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 
 移动端笔记单独占满工作区，仍保留自动保存和 Markdown 编辑 / 预览切换。
 
+### Android 模拟器竖屏
+
+![Android 模拟器竖屏](docs/screenshots/android/emulator-portrait.png)
+
+模拟器使用 `Medium_Phone_API_37.0`，通过 `adb install` 安装 APK 后启动 `com.juitar.app`，截图证明同一套 Touch Bar 和谱面工作区在 Android WebView 中可用。横屏布局使用前面的浏览器 873×393 截图验收。
+
 ## 3. 实战曲谱测试夹具
 
 `sample-vault/Songs/` 中包含 4 首可直接扫描的 MusicXML 曲谱：
@@ -67,6 +73,7 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 - 锚点状态截图：`?showcase=anchor` 进入 8–12 循环状态。
 - 曲库状态截图：`?showcase=library` 展开移动曲库抽屉。
 - 笔记状态截图：`?showcase=notes` 进入移动笔记面板。
+- Android 模拟器：APK 安装成功，启动焦点为 `com.juitar.app/.MainActivity`，竖屏截图已保存。
 
 ### 浏览器端到端实战记录
 
@@ -77,9 +84,10 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 | 版本 | Commit | 摘要 |
 |---|---|---|
 | v0.0.1 | `d4aab2f` | 统一版本基线；建立深色设计系统；加入响应式工作台、移动 Touch Bar、曲库抽屉和截图验收资产。 |
-| v0.0.2 | 待提交 | 增加 70% / 80% / 100% 练习速度预设；锚点验收进入真实 Markdown 预览；补齐多首 MusicXML 实战夹具。 |
-| v0.0.3 | 待提交 | 补齐曲面屏安全边距、触控目标和移动端触摸行为；更新 Android 工具链准备状态。 |
-| v0.0.4 | 待提交 | 让谱面字体、音色和演示曲谱使用 Vite base URL，兼容 Android asset 离线加载；开始 Tauri Android 初始化。 |
+| v0.0.2 | `933babc` | 增加 70% / 80% / 100% 练习速度预设；锚点验收进入真实 Markdown 预览；补齐多首 MusicXML 实战夹具。 |
+| v0.0.3 | `68be082` | 补齐曲面屏安全边距、触控目标和移动端触摸行为。 |
+| v0.0.4 | `37b9443` | 让谱面字体、音色和演示曲谱使用 Vite base URL，兼容 Android asset 离线加载。 |
+| v0.0.5 | 待提交 | 生成 Android WebView APK；在 `Medium_Phone_API_37.0` 模拟器安装并完成竖屏截图验收。 |
 
 ## 6. 交付路径
 
@@ -89,4 +97,4 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 - 视觉样式：[src/style.css](src/style.css)
 - 构建记录：[BUILD_LOG.md](BUILD_LOG.md)
 
-Android APK 产出目录预留为 `release-apk/`。当前仓库已完成 Web/Tauri 桌面闭环；Android 原生打包正在补齐命令行工具链，完成后将生成 `Juitar-v0.0.x-arm64.apk`。
+Android APK：`release-apk/Juitar-v0.0.5-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器；Tauri 桌面端仍使用同一份 Vue 前端与本地 Vault 逻辑。
