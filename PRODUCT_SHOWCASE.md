@@ -1,6 +1,6 @@
 # Juitar 产品视觉与功能验收手册
 
-> 当前基线：`v0.0.6` · Vue 3 + TypeScript + Tauri + Rust + alphaTab
+> 当前基线：`v0.0.7` · 原生 HTML + CSS + JavaScript + alphaTab
 
 ## 1. 产品设计美学
 
@@ -89,6 +89,7 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 | v0.0.4 | `37b9443` | 让谱面字体、音色和演示曲谱使用 Vite base URL，兼容 Android asset 离线加载。 |
 | v0.0.5 | `0fbabfa` | 生成 Android WebView APK；在 `Medium_Phone_API_37.0` 模拟器安装并完成竖屏截图验收。 |
 | v0.0.6 | `70426e9` | 固定 Vitest 单 worker 回归配置；完成最终 Android APK 与交付文档。 |
+| v0.0.7 | `af8ec29` | 推倒旧分屏，改为原生单页全宽看谱 / 笔记；默认 AlphaTex 真六线谱和图片/PDF/GP/MusicXML 导入。 |
 
 ## 6. 交付路径
 
@@ -98,4 +99,22 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 - 视觉样式：[src/style.css](src/style.css)
 - 构建记录：[BUILD_LOG.md](BUILD_LOG.md)
 
-Android APK：`release-apk/Juitar-v0.0.6-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器；Tauri 桌面端仍使用同一份 Vue 前端与本地 Vault 逻辑。
+Android APK：`release-apk/Juitar-v0.0.7-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器。
+
+## 7. 原生单页重做验收（v0.0.7 开发中）
+
+本轮已移除运行时 Vue 分屏和数字矩阵，入口改为 `index.html + src/app.js + src/style.css`：
+
+- 手机始终是单列全宽布局，顶部 48px、主视口、底部 64px 控制栏。
+- “看谱 / 笔记”通过底部 Tab 切换，不再左右对半分屏。
+- 默认曲谱由 alphaTab 官方浏览器包 + AlphaTex 渲染，`renderFinished` 后显示 `真实六线谱已渲染`。
+- 支持图片、PDF、GP、MusicXML 文件导入；图片和 PDF 直接在全宽谱面视口中查看。
+- 笔记支持 `[m:8-12]` 胶囊点击回到谱面、练习计时、历史打卡和本地自动保存。
+
+真实渲染截图：
+
+![原生单页真实六线谱](docs/screenshots/native-rebuild/cua-actual-score.png)
+
+![原生单页笔记视图](docs/screenshots/native-rebuild/cua-notes.png)
+
+![原生单页曲库抽屉](docs/screenshots/native-rebuild/cua-library.png)
