@@ -1,5 +1,8 @@
 const VERSION = '0.0.7'
-const BASE = import.meta.env.BASE_URL
+const BASE = './'
+const assetUrl = (path) => new URL(path, document.baseURI).href
+const isMobileDevice = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 760
+document.documentElement.classList.toggle('mobile-mode', isMobileDevice)
 const alphaTab = window.alphaTab
 window.__ALPHATAB__ = alphaTab
 const DEFAULT_NOTE = `# 今日练琴
@@ -70,8 +73,15 @@ function setLoop(start = state.currentMeasure, end = start + 4) { state.loop = {
 function jumpToMeasure(start, end = start) { state.currentMeasure = Number(start); els.measureLabel.textContent = `小节 ${state.currentMeasure}`; setLoop(start, end); els.scoreHost.querySelector(`[data-bar-index="${state.currentMeasure - 1}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
 
 function createAlphaTab() {
+  if (!alphaTab?.AlphaTabApi) {
+    els.scoreState.textContent = '直接双击模式：可导入图片/PDF；真实六线谱请使用 APK 或本地开发服务'
+    els.renderBadge.textContent = 'OFFLINE FILE'
+    els.scoreHost.innerHTML = '<div class="direct-file-help"><strong>页面已打开</strong><p>浏览器的 file:// 安全策略会阻止 alphaTab worker。请运行 <code>npm run dev</code>，或直接使用 Android APK 查看真实六线谱。</p></div>'
+    return
+  }
   try {
-    state.api = new alphaTab.AlphaTabApi(els.scoreHost, { core: { engine: 'svg', scriptFile: `${location.origin}${BASE}alphatab/alphaTab.min.js`, fontDirectory: `${BASE}font/` }, display: { scale: 1.18, staveProfile: 'tab' }, player: { enablePlayer: true, soundFont: `${BASE}soundfont/sonivox.sf2` } })
+    const scale = isMobileDevice ? 0.78 : 1.05
+    state.api = new alphaTab.AlphaTabApi(els.scoreHost, { core: { engine: 'svg', scriptFile: assetUrl('alphatab/alphaTab.min.js'), fontDirectory: assetUrl('font/') }, display: { scale, staveProfile: 'tab' }, player: { enablePlayer: true, soundFont: assetUrl('soundfont/sonivox.sf2') } })
     state.api.renderFinished.on(() => { state.scoreReady = true; els.scoreState.textContent = '真实六线谱已渲染'; els.renderBadge.textContent = 'AlphaTex · READY'; els.scoreHost.classList.add('ready') })
     state.api.error.on((error) => { console.error('[Juitar] alphaTab error', error); els.scoreState.textContent = `谱面错误：${error.message || error}`; els.scoreState.classList.add('error') })
     state.api.playerStateChanged.on((event) => { state.isPlaying = event.state === alphaTab.synth.PlayerState.Playing; els.play.classList.toggle('playing', state.isPlaying); els.play.querySelector('span').textContent = state.isPlaying ? 'Ⅱ' : '▶' })

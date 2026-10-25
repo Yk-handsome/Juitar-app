@@ -10,6 +10,10 @@ import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient.FileChooserParams;
+import android.content.Intent;
+import android.net.Uri;
 import android.webkit.ConsoleMessage;
 import android.util.Log;
 import android.content.res.AssetManager;
@@ -26,6 +30,8 @@ import java.nio.charset.StandardCharsets;
 
 public final class MainActivity extends Activity {
     private WebView webView;
+    private ValueCallback<Uri[]> fileChooserCallback;
+    private static final int FILE_CHOOSER_REQUEST = 7107;
     private ServerSocket server;
     private Thread serverThread;
     @Override public void onCreate(Bundle state) {
@@ -48,6 +54,16 @@ public final class MainActivity extends Activity {
         });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onConsoleMessage(ConsoleMessage message) { Log.i("JuitarWeb", message.message() + " @" + message.sourceId() + ":" + message.lineNumber()); return true; }
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (fileChooserCallback != null) fileChooserCallback.onReceiveValue(null);
+                fileChooserCallback = callback;
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("*/*");
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false);
+                try { startActivityForResult(intent, FILE_CHOOSER_REQUEST); return true; }
+                catch (Exception error) { Log.e("JuitarWeb", "file chooser=" + error); fileChooserCallback = null; return false; }
+            }
         });
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -119,6 +135,18 @@ public final class MainActivity extends Activity {
     @Override public void onDestroy() {
         try { if (server != null) server.close(); } catch (IOException ignored) { }
         super.onDestroy();
+    }
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != FILE_CHOOSER_REQUEST || fileChooserCallback == null) return;
+        Uri[] results = null;
+        if (resultCode == RESULT_OK && data != null) {
+            if (data.getClipData() != null && data.getClipData().getItemCount() > 0) {
+                int count = data.getClipData().getItemCount(); results = new Uri[count];
+                for (int i = 0; i < count; i++) results[i] = data.getClipData().getItemAt(i).getUri();
+            } else if (data.getData() != null) results = new Uri[]{ data.getData() };
+        }
+        fileChooserCallback.onReceiveValue(results); fileChooserCallback = null;
     }
     @Override public void onBackPressed() {
         if (webView != null && webView.canGoBack()) webView.goBack(); else super.onBackPressed();

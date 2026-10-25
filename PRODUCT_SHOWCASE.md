@@ -1,6 +1,6 @@
 # Juitar 产品视觉与功能验收手册
 
-> 当前基线：`v0.0.7` · 原生 HTML + CSS + JavaScript + alphaTab
+> 当前基线：`v0.0.8` · 原生 HTML + CSS + JavaScript + alphaTab
 
 ## 1. 产品设计美学
 
@@ -90,6 +90,7 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 | v0.0.5 | `0fbabfa` | 生成 Android WebView APK；在 `Medium_Phone_API_37.0` 模拟器安装并完成竖屏截图验收。 |
 | v0.0.6 | `70426e9` | 固定 Vitest 单 worker 回归配置；完成最终 Android APK 与交付文档。 |
 | v0.0.7 | `af8ec29` | 推倒旧分屏，改为原生单页全宽看谱 / 笔记；默认 AlphaTex 真六线谱和图片/PDF/GP/MusicXML 导入。 |
+| v0.0.8 | `5f6b5d1` | 修复 Android WebView 文件选择器、手机缩放和直接打开 HTML 的空白问题。 |
 
 ## 6. 交付路径
 
@@ -99,7 +100,7 @@ Juitar 的工作台采用深色音乐工作室风格：底层使用 `#0D0E11`，
 - 视觉样式：[src/style.css](src/style.css)
 - 构建记录：[BUILD_LOG.md](BUILD_LOG.md)
 
-Android APK：`release-apk/Juitar-v0.0.7-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器。
+Android APK：`release-apk/Juitar-v0.0.8-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器。
 
 ## 7. 原生单页重做验收（v0.0.7 开发中）
 
@@ -118,3 +119,11 @@ Android APK：`release-apk/Juitar-v0.0.7-arm64.apk`。该产物是无原生 ABI 
 ![原生单页笔记视图](docs/screenshots/native-rebuild/cua-notes.png)
 
 ![原生单页曲库抽屉](docs/screenshots/native-rebuild/cua-library.png)
+
+手机实机验收：
+
+![手机真实六线谱](docs/screenshots/phone-debug/after-fix.png)
+
+![手机系统文件选择器](docs/screenshots/phone-debug/file-picker-fixed.png)
+
+![手机图片谱导入](docs/screenshots/phone-debug/image-imported.png)

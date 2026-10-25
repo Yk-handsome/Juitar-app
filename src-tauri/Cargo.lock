@@ -1638,7 +1638,7 @@ dependencies = [
 
 [[package]]
 name = "juitar-app"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "serde",
  "serde_json",

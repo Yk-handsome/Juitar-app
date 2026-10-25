@@ -1,6 +1,6 @@
 [package]
 name = "juitar-app"
-version = "0.0.7"
+version = "0.0.8"
 description = "Juitar personal guitar practice desk"
 authors = ["Juitar"]
 edition = "2021"
