@@ -106,8 +106,8 @@ function showPdf(file) {
 }
 function showAlphaTabFile(file, kind) {
   if (!state.api) return setStatus('当前页面未加载 alphaTab，请使用 npm run dev 或 APK', true)
-  clearScore(); setKind(kind); setTitle(file.name.replace(/\.[^.]+$/, '')); setStatus('正在渲染真实六线谱…')
-  file.arrayBuffer().then(function (buffer) { state.api.load(new Uint8Array(buffer)) }).catch(function (error) { setStatus('导入失败：' + error.message, true) })
+  clearScore(); setKind(kind); setTitle(file.name.replace(/\.[^.]+$/, '')); setStatus('正在渲染真实谱面…')
+  file.arrayBuffer().then(function (buffer) { initializeAlphaTabApi(kind); state.api.load(new Uint8Array(buffer)) }).catch(function (error) { setStatus('导入失败：' + error.message, true) })
 }
 function showAlphaTexText(text, title) {
   if (!state.api) return setStatus('当前页面未加载 alphaTab，请使用 npm run dev 或 APK', true)
@@ -144,7 +144,7 @@ function createNewSong() {
   const file = new File([tex], title + '.atex', { type: 'text/x-alphatex' })
   closeNewSong(); addToLibrary(file, 'alphatex'); showAlphaTexText(tex, title); setStatus('新曲子已创建')
 }
-function initializeAlphaTabApi() {
+function initializeAlphaTabApi(kind) {
   if (!alphaTab || !alphaTab.AlphaTabApi) {
     setStatus('直接打开 HTML 时无法启动 alphaTab，请使用 npm run dev 或 APK', true)
     els.host.innerHTML = '<div class="runtime-help"><strong>需要本地运行环境</strong><p>图片和 PDF 可以直接导入；GP/MusicXML 与默认六线谱请通过 APK 或 <code>npm run dev</code> 打开。</p></div>'; setKind('alphatex'); return
@@ -155,7 +155,7 @@ function initializeAlphaTabApi() {
     setKind('alphatex')
     state.api = new alphaTab.AlphaTabApi(els.host, {
       core: { engine: 'svg', scriptFile: assetUrl('alphatab/alphaTab.min.js'), fontDirectory: assetUrl('font/') },
-      display: { scale: isMobile ? 0.86 : 1.05, staveProfile: 'tab', layoutMode: 'page' },
+      display: { scale: isMobile ? 0.86 : 1.05, staveProfile: kind === 'musicxml' ? 'default' : 'tab', layoutMode: 'page' },
       player: { enablePlayer: true, soundFont: assetUrl('soundfont/sonivox.sf2') },
     })
     state.api.renderFinished.on(function () { if (!['alphatex', 'gp', 'musicxml'].includes(state.kind)) return; state.ready = true; els.host.classList.add('ready'); setStatus('真实六线谱已渲染') })
