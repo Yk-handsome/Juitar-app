@@ -3,5 +3,12 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-  test: { environment: 'jsdom', globals: true, include: ['src/**/*.test.ts'] },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/**/*.test.ts'],
+    pool: 'forks',
+    fileParallelism: false,
+    maxWorkers: 1,
+  },
 })

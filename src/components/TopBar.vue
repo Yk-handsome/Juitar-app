@@ -18,7 +18,7 @@ async function openVault() {
 
 <template>
   <header class="top-bar">
-    <div class="top-title"><div><div class="eyebrow">PRACTICE DESK / 01 · v0.0.5</div><h1>{{ title }}</h1></div></div>
+    <div class="top-title"><div><div class="eyebrow">PRACTICE DESK / 01 · v0.0.6</div><h1>{{ title }}</h1></div></div>
     <div class="top-actions">
       <div class="top-stat"><strong>{{ scoreStore.speed }}%</strong><span>PLAYBACK</span></div>
       <button class="icon-button library-toggle" title="打开曲库" @click="emit('toggle-library')">☰</button>
