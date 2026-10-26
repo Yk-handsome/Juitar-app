@@ -8,13 +8,13 @@
 
 ~~~text
 index.html
-├── src/app.js       原生 DOM、alphaTab、导入、谱夹、底部笔记抽屉和播放
+├── src/app.js       原生 DOM、曲目/谱页模型、alphaTab、导入、谱夹、笔记抽屉和播放
 └── src/style.css    全屏看谱布局、悬浮控件和抽屉样式
 ~~~
 
 核心视图：
 
-- 看谱：全宽显示图片谱、PDF 或 alphaTab 真六线谱。
+- 看谱：全宽连续显示当前曲目的多张图片谱、PDF 或 alphaTab 真谱页。
 - 笔记：默认隐藏的当前曲目底部抽屉，自动保存文本；点击 [m:8] 回到谱面对应小节。
 - Android：android-lite/MainActivity.java 提供 WebView、资源拦截和系统文件选择器。
 
@@ -197,14 +197,14 @@ powershell -ExecutionPolicy Bypass -File android-lite/build.ps1
 产物：
 
 ~~~text
-release-apk/Juitar-v0.0.10-arm64.apk
+release-apk/Juitar-v0.1.0-arm64.apk
 ~~~
 
 签名验证：
 
 ~~~powershell
 $bt = "$env:ANDROID_SDK_ROOT/build-tools/36.0.0"
-& "$bt/apksigner.bat" verify --verbose release-apk/Juitar-v0.0.10-arm64.apk
+& "$bt/apksigner.bat" verify --verbose release-apk/Juitar-v0.1.0-arm64.apk
 ~~~
 
 ## 9. 手机调试
@@ -218,7 +218,7 @@ adb devices -l
 安装和启动：
 
 ~~~powershell
-adb install -r release-apk/Juitar-v0.0.10-arm64.apk
+adb install -r release-apk/Juitar-v0.1.0-arm64.apk
 adb shell am force-stop com.juitar.app
 adb shell monkey -p com.juitar.app 1
 ~~~
@@ -267,7 +267,7 @@ git push origin v0.0.x
 - v0.0.6：最终 APK 和交付文档
 - v0.0.7：原生单页、真实 AlphaTex 六线谱
 - v0.0.8：Android 文件选择器、手机缩放和直接 HTML 兜底
-- v0.0.10：极简全屏谱夹、IndexedDB 导入、底部笔记抽屉和悬浮播放器
+- v0.1.0：极简全屏谱夹、IndexedDB 导入、底部笔记抽屉和悬浮播放器
 
 ## 12. 常见问题
 
@@ -277,7 +277,7 @@ git push origin v0.0.x
 
 ### 导入按钮无反应
 
-确认安装 v0.0.10 APK。Android 原生桥接必须包含 onShowFileChooser。
+确认安装 v0.1.0 APK。Android 原生桥接必须包含 onShowFileChooser。
 
 ### 真谱没有出现
 

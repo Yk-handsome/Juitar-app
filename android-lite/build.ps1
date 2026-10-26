@@ -1,6 +1,6 @@
 param(
   [string]$SdkRoot = $env:ANDROID_SDK_ROOT,
-  [string]$Output = "release-apk/Juitar-v0.0.10-arm64.apk"
+  [string]$Output = "release-apk/Juitar-v0.1.0-arm64.apk"
 )
 $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($SdkRoot)) { throw 'ANDROID_SDK_ROOT is required' }

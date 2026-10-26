@@ -1,12 +1,12 @@
 # Juitar 产品视觉与功能验收手册
 
-> 当前基线：`v0.0.10` · 原生 HTML + CSS + JavaScript + alphaTab
+> 当前基线：`v0.1.0` · 原生 HTML + CSS + JavaScript + alphaTab
 
 ## 1. 产品设计美学
 
 Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透明导航，谱面占满剩余空间；暖琥珀色只用于导入、播放和 BPM 控件，笔记通过右下角按钮打开底部毛玻璃抽屉。
 
-交互优先考虑移动看谱：图片/PDF 全宽滚动，GP/MusicXML 使用 alphaTab 真六线谱；只有矢量谱显示右下角悬浮播放/BPM 药丸，笔记关闭后不占谱面空间。
+交互优先考虑移动看谱：一个曲目可以包含多张图片/PDF/GP/MusicXML 谱页，页面按顺序连续滚动；只有矢量谱显示右下角悬浮播放/BPM 药丸，笔记关闭后不占谱面空间。
 
 ## 2. 核心界面图鉴
 
@@ -32,7 +32,7 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 
 ![移动曲库抽屉](docs/screenshots/mobile-library-drawer.png)
 
-谱夹入口展开后显示已导入的图片、PDF、GP 和 MusicXML；文件正文存入 IndexedDB，点击项目即可恢复查看。
+谱夹入口全屏显示曲目列表；进入曲目后可查看谱页数量、调整顺序并删除谱页，文件正文存入 IndexedDB。
 
 ### 笔记锚点与 A-B 循环
 
@@ -91,7 +91,7 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 | v0.0.6 | `70426e9` | 固定 Vitest 单 worker 回归配置；完成最终 Android APK 与交付文档。 |
 | v0.0.7 | `af8ec29` | 推倒旧分屏，改为原生单页全宽看谱 / 笔记；默认 AlphaTex 真六线谱和图片/PDF/GP/MusicXML 导入。 |
 | v0.0.8 | `5f6b5d1` | 修复 Android WebView 文件选择器、手机缩放和直接打开 HTML 的空白问题。 |
-| v0.0.10 | 当前工作树 | 重做为极简全屏手机谱夹：移除打卡统计和分屏，增加 IndexedDB 谱夹、底部笔记抽屉与矢量谱悬浮播放器。 |
+| v0.1.0 | 当前工作树 | 重做为极简全屏手机谱夹：移除打卡统计和分屏，增加 IndexedDB 谱夹、底部笔记抽屉与矢量谱悬浮播放器。 |
 
 ## 6. 交付路径
 
@@ -101,9 +101,9 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 - 视觉样式：[src/style.css](src/style.css)
 - 构建记录：[BUILD_LOG.md](BUILD_LOG.md)
 
-Android APK：`release-apk/Juitar-v0.0.10-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器。
+Android APK：`release-apk/Juitar-v0.1.0-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器。
 
-## 7. 极简全屏谱夹验收（v0.0.10）
+## 7. 极简全屏谱夹验收（v0.1.0）
 
 本轮已移除运行时 Vue 分屏和数字矩阵，入口改为 `index.html + src/app.js + src/style.css`：
 
