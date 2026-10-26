@@ -91,10 +91,10 @@ function setStatus(text, error = false) { els.status.textContent = text; els.sta
 function setTitle(title) { els.title.textContent = title; els.title.title = title; els.noteTitle.textContent = title; document.title = 'Juitar · ' + title }
 function setKind(kind) { state.kind = kind; els.player.hidden = !state.hasVector }
 function revokeObjectUrls() { state.objectUrls.forEach((url) => URL.revokeObjectURL(url)); state.objectUrls = [] }
-function openDb() {
+function openDb(name = 'juitar-v3') {
   return new Promise((resolve) => {
     if (!('indexedDB' in window)) return resolve(null)
-    const request = indexedDB.open('juitar-v3', 1)
+    const request = indexedDB.open(name, 1)
     request.onupgradeneeded = () => request.result.createObjectStore('files')
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => resolve(null)
@@ -105,8 +105,11 @@ async function saveBlob(id, file) {
   await new Promise((resolve) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put(file, id); tx.oncomplete = resolve; tx.onerror = resolve })
 }
 async function readBlob(id) {
-  const db = await openDb(); if (!db) return null
-  return new Promise((resolve) => { const tx = db.transaction('files', 'readonly'); const request = tx.objectStore('files').get(id); request.onsuccess = () => resolve(request.result || null); request.onerror = () => resolve(null) })
+  const readFrom = async (name) => {
+    const db = await openDb(name); if (!db) return null
+    return new Promise((resolve) => { const tx = db.transaction('files', 'readonly'); const request = tx.objectStore('files').get(id); request.onsuccess = () => resolve(request.result || null); request.onerror = () => resolve(null) })
+  }
+  return (await readFrom('juitar-v3')) || (await readFrom('juitar-v2'))
 }
 function fileKind(file) {
   const name = file.name.toLowerCase()
