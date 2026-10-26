@@ -24,8 +24,8 @@ const DEFAULT_TEX = [
 const uid = (prefix) => prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(16).slice(2)
 const stripExt = (name) => String(name).replace(/\.[^.]+$/, '')
 const oldLibrary = JSON.parse(localStorage.getItem('juitar:library:v2') || '[]')
-const defaultSong = () => ({ id: 'song-default', title: DEFAULT_TITLE, note: '', createdAt: Date.now(), updatedAt: Date.now(), pages: [{ id: 'page-default', type: 'alphatex', name: '默认六线谱', text: DEFAULT_TEX }] })
-const normalizeSongs = (songs) => songs.map((song) => ({ ...song, pages: (song.pages || []).map((page) => page.text ? { ...page, text: page.text.replace(/\\n/g, '\n') } : page) }))
+const defaultSong = () => ({ id: 'song-default', title: DEFAULT_TITLE, note: '', lastPageId: 'page-default', lastScrollTop: 0, createdAt: Date.now(), updatedAt: Date.now(), pages: [{ id: 'page-default', type: 'alphatex', name: '默认六线谱', text: DEFAULT_TEX }] })
+const normalizeSongs = (songs) => songs.map((song) => ({ ...song, lastPageId: song.lastPageId || null, lastScrollTop: Number(song.lastScrollTop) || 0, pages: (song.pages || []).map((page) => page.text ? { ...page, text: page.text.replace(/\\n/g, '\n') } : page) }))
 const migrateSongs = () => {
   const saved = JSON.parse(localStorage.getItem(SONGS_KEY) || 'null')
   if (Array.isArray(saved) && saved.length) return normalizeSongs(saved)
@@ -35,6 +35,8 @@ const migrateSongs = () => {
     note: '',
     createdAt: item.addedAt || Date.now(),
     updatedAt: item.addedAt || Date.now(),
+    lastPageId: null,
+    lastScrollTop: 0,
     pages: [{ id: 'page-' + item.id, type: item.kind, name: item.name, blobId: item.id }],
   }))
   return [defaultSong()]
@@ -52,6 +54,8 @@ const state = {
   playing: false,
   objectUrls: [],
   pinch: { active: false, distance: 0, scale: 1 },
+  scrollSaveTimer: 0,
+  pendingFiles: [],
 }
 
 if (!state.currentSongId || !state.songs.some((song) => song.id === state.currentSongId)) state.currentSongId = state.songs[0].id
@@ -65,7 +69,7 @@ app.innerHTML = '\
     <input id="fileInput" type="file" hidden multiple accept=".jpg,.jpeg,.png,.pdf,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.atex,image/jpeg,image/png,application/pdf,application/octet-stream,application/xml,text/xml,text/x-alphatex" />\
   </header>\
   <main class="score-main"><div class="score-scroll" id="scoreScroll"><div class="score-host" id="scoreHost" aria-live="polite"></div></div></main>\
-  <div class="score-status" id="scoreStatus"></div>\
+  <div class="score-status" id="scoreStatus"></div><div class="score-progress" id="scoreProgress">第 1 / 1 页</div>\
   <div class="float-player" id="floatPlayer" hidden>\
     <button id="playButton" aria-label="播放或暂停"><span>▶</span></button><button id="bpmDown" aria-label="降低 BPM">−5</button><strong id="bpmValue">90 BPM</strong><button id="bpmUp" aria-label="提高 BPM">＋5</button>\
   </div>\
@@ -73,15 +77,16 @@ app.innerHTML = '\
   <div class="drawer-scrim" id="drawerScrim" hidden></div>\
   <aside class="library-drawer" id="libraryDrawer" aria-hidden="true"><div class="drawer-head"><strong>我的谱夹</strong><button class="close-button" id="closeLibrary" aria-label="关闭">×</button></div><button class="new-song-button" id="newSongButton">＋ 新建曲子</button><p class="drawer-hint">先打开一首曲目，再用“添加谱页”一次选择多张图片、PDF 或 GP/MusicXML。</p><div class="library-list" id="libraryList"></div><section class="page-manager" id="pageManager"></section></aside>\
   <aside class="note-drawer" id="noteDrawer" aria-hidden="true"><div class="drawer-handle"></div><div class="note-head"><strong>《<span id="noteSongTitle"></span>》笔记</strong><span id="noteSaved">自动保存</span></div><textarea id="noteEditor" placeholder="记录这首曲子的指法、难点或想法…&#10;&#10;可写 [m:12] 跳到第 12 小节"></textarea><div class="note-footer"><button class="note-anchor" id="jumpAnchor">跳到笔记中的小节</button><span>点击遮罩或下滑收起</span></div></aside>\
+  <div class="import-modal" id="importModal" hidden><div class="import-card"><div class="new-song-head"><strong>导入谱页</strong><button class="close-button" id="cancelImport" aria-label="关闭">×</button></div><p>已选择 <span id="importCount">0</span> 个文件。请选择放入位置。</p><div class="import-file-list" id="importFileList"></div><div class="new-song-actions"><button class="secondary-button" id="importAsNew">新建曲目并加入</button><button class="primary-button" id="importIntoCurrent">加入当前曲目</button></div></div></div>\
   <div class="new-song-modal" id="newSongModal" hidden><div class="new-song-card"><div class="new-song-head"><strong>新建曲子</strong><button class="close-button" id="cancelNewSong" aria-label="关闭">×</button></div><p>新曲目会先带一份可直接查看的六线谱模板，之后可以继续添加多张谱页。</p><label for="newSongName">曲名</label><input id="newSongName" type="text" maxlength="80" placeholder="例如：Hotel California" /><div class="new-song-actions"><button class="secondary-button" id="cancelNewSongBottom">取消</button><button class="primary-button" id="createNewSong">创建并打开</button></div></div></div>'
 
 const els = {
   title: document.querySelector('#songTitle'), noteTitle: document.querySelector('#noteSongTitle'), host: document.querySelector('#scoreHost'),
   scroll: document.querySelector('#scoreScroll'), status: document.querySelector('#scoreStatus'), file: document.querySelector('#fileInput'),
-  player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'),
+  player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'), progress: document.querySelector('#scoreProgress'),
   library: document.querySelector('#libraryDrawer'), libraryList: document.querySelector('#libraryList'), scrim: document.querySelector('#drawerScrim'),
   noteDrawer: document.querySelector('#noteDrawer'), noteEditor: document.querySelector('#noteEditor'), noteSaved: document.querySelector('#noteSaved'),
-  newSongModal: document.querySelector('#newSongModal'), newSongName: document.querySelector('#newSongName'), pageManager: document.querySelector('#pageManager'),
+  newSongModal: document.querySelector('#newSongModal'), newSongName: document.querySelector('#newSongName'), pageManager: document.querySelector('#pageManager'), importModal: document.querySelector('#importModal'), importFileList: document.querySelector('#importFileList'), importCount: document.querySelector('#importCount'),
 }
 
 function currentSong() { return state.songs.find((song) => song.id === state.currentSongId) || state.songs[0] }
@@ -122,7 +127,21 @@ function fileKind(file) {
 }
 function destroyApi() { if (state.api && typeof state.api.destroy === 'function') state.api.destroy(); state.api = null }
 function clearScore() { destroyApi(); revokeObjectUrls(); els.host.replaceChildren(); els.host.className = 'score-host'; state.hasVector = false; state.playing = false; els.player.hidden = true; state.renderToken += 1 }
-function setSong(song) { state.currentSongId = song.id; state.currentPageId = null; saveSongs(); setTitle(song.title); els.noteEditor.value = song.note || ''; renderLibrary() }
+function setSong(song) { state.currentSongId = song.id; state.currentPageId = song.lastPageId || null; saveSongs(); setTitle(song.title); els.noteEditor.value = song.note || ''; renderLibrary() }
+function updateProgress() {
+  const pages = Array.from(els.host.querySelectorAll('.score-page'))
+  if (!pages.length) { els.progress.textContent = '暂无谱页'; return }
+  const anchor = els.scroll.getBoundingClientRect().top + 24
+  let index = 0
+  pages.forEach((page, candidate) => { if (page.getBoundingClientRect().top <= anchor) index = candidate })
+  const song = currentSong(); const page = pages[index]
+  state.currentPageId = page.dataset.pageId
+  song.lastPageId = state.currentPageId
+  song.lastScrollTop = els.scroll.scrollTop
+  els.progress.textContent = '第 ' + (index + 1) + ' / ' + pages.length + ' 页'
+  clearTimeout(state.scrollSaveTimer)
+  state.scrollSaveTimer = setTimeout(saveSongs, 350)
+}
 function enablePinchZoom(stage, image) {
   stage._pointers = {}
   stage.addEventListener('pointerdown', (event) => { stage.setPointerCapture(event.pointerId); stage._pointers[event.pointerId] = event })
@@ -183,7 +202,23 @@ async function renderSong(song) {
     else if (page.type === 'pdf' && blob) appendPdfPage(page, blob, index)
     else if (['gp', 'musicxml', 'alphatex'].includes(page.type)) await appendVectorPage(page, blob, index, token)
   }
-  if (token === state.renderToken) { setKind(state.hasVector ? 'vector' : (song.pages[0]?.type || 'image')); setStatus(song.pages.length + ' 个谱页已打开') }
+  if (token === state.renderToken) {
+    setKind(state.hasVector ? 'vector' : (song.pages[0]?.type || 'image')); setStatus(song.pages.length + ' 个谱页已打开')
+    requestAnimationFrame(() => { els.scroll.scrollTop = Number(song.lastScrollTop) || 0; updateProgress() })
+  }
+}
+function openImportPreview(files) {
+  state.pendingFiles = files
+  els.importCount.textContent = String(files.length)
+  els.importFileList.innerHTML = files.map((file, index) => '<div class="import-file-row"><span>' + (index + 1) + '</span><strong>' + escapeHtml(file.name) + '</strong><small>' + Math.round(file.size / 1024) + ' KB</small></div>').join('')
+  els.importModal.hidden = false
+}
+function closeImportPreview() { els.importModal.hidden = true; state.pendingFiles = [] }
+async function createSongFromPendingFiles() {
+  const files = state.pendingFiles.slice(); if (!files.length) return
+  const title = stripExt(files[0].name) || '新曲目'
+  const song = { id: uid('song'), title, note: '', lastPageId: null, lastScrollTop: 0, createdAt: Date.now(), updatedAt: Date.now(), pages: [] }
+  state.songs = [song, ...state.songs]; state.currentSongId = song.id; saveSongs(); closeImportPreview(); renderLibrary(); await addFilesToCurrentSong(files)
 }
 async function addFilesToCurrentSong(files) {
   const song = currentSong(); const accepted = []
@@ -226,13 +261,16 @@ function jumpToMeasure(start) { const index = Math.max(1, Number(start) || 1); c
 function setBpm(value) { state.bpm = Math.max(40, Math.min(220, value)); els.bpm.textContent = state.bpm + ' BPM'; if (state.api) state.api.playbackSpeed = state.bpm / 90 }
 
 document.querySelector('#importButton').addEventListener('click', () => els.file.click())
-els.file.addEventListener('change', (event) => { const files = Array.from(event.target.files || []); event.target.value = ''; if (files.length) addFilesToCurrentSong(files) })
+els.file.addEventListener('change', (event) => { const files = Array.from(event.target.files || []); event.target.value = ''; if (files.length) openImportPreview(files) })
 document.querySelector('#libraryButton').addEventListener('click', openLibrary)
 document.querySelector('#closeLibrary').addEventListener('click', closeLibrary)
 document.querySelector('#newSongButton').addEventListener('click', openNewSong)
 document.querySelector('#cancelNewSong').addEventListener('click', closeNewSong)
 document.querySelector('#cancelNewSongBottom').addEventListener('click', closeNewSong)
 document.querySelector('#createNewSong').addEventListener('click', createNewSong)
+document.querySelector('#cancelImport').addEventListener('click', closeImportPreview)
+document.querySelector('#importIntoCurrent').addEventListener('click', async () => { const files = state.pendingFiles.slice(); closeImportPreview(); await addFilesToCurrentSong(files) })
+document.querySelector('#importAsNew').addEventListener('click', createSongFromPendingFiles)
 els.newSongName.addEventListener('keydown', (event) => { if (event.key === 'Enter') createNewSong() })
 document.querySelector('#noteFab').addEventListener('click', openNotes)
 document.querySelector('#drawerScrim').addEventListener('click', () => { closeLibrary(); closeNotes() })
@@ -240,6 +278,7 @@ document.querySelector('#playButton').addEventListener('click', () => state.api?
 document.querySelector('#bpmDown').addEventListener('click', () => setBpm(state.bpm - 5))
 document.querySelector('#bpmUp').addEventListener('click', () => setBpm(state.bpm + 5))
 document.querySelector('#jumpAnchor').addEventListener('click', () => { const match = currentSong().note?.match(/\[m:(\d+)\]/); if (match) jumpToMeasure(match[1]); else { els.noteEditor.focus(); setStatus('笔记中还没有 [m:小节号] 标记') } })
+els.scroll.addEventListener('scroll', updateProgress, { passive: true })
 els.noteEditor.addEventListener('input', saveNote)
 let noteStartY = 0
 els.noteDrawer.addEventListener('touchstart', (event) => { noteStartY = event.touches[0]?.clientY || 0 }, { passive: true })
