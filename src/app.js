@@ -76,7 +76,7 @@ app.innerHTML = '\
   <button class="note-fab" id="noteFab" aria-label="打开笔记">📝</button>\
   <div class="drawer-scrim" id="drawerScrim" hidden></div>\
   <aside class="library-drawer" id="libraryDrawer" aria-hidden="true"><div class="drawer-head"><strong>我的谱夹</strong><button class="close-button" id="closeLibrary" aria-label="关闭">×</button></div><button class="new-song-button" id="newSongButton">＋ 新建曲子</button><p class="drawer-hint">先打开一首曲目，再用“添加谱页”一次选择多张图片、PDF 或 GP/MusicXML。</p><div class="library-list" id="libraryList"></div><section class="page-manager" id="pageManager"></section></aside>\
-  <aside class="note-drawer" id="noteDrawer" aria-hidden="true"><div class="drawer-handle"></div><div class="note-head"><strong>《<span id="noteSongTitle"></span>》笔记</strong><span id="noteSaved">自动保存</span></div><textarea id="noteEditor" placeholder="记录这首曲子的指法、难点或想法…&#10;&#10;可写 [m:12] 跳到第 12 小节"></textarea><div class="note-footer"><button class="note-anchor" id="jumpAnchor">跳到笔记中的小节</button><span>点击遮罩或下滑收起</span></div></aside>\
+  <aside class="note-drawer" id="noteDrawer" aria-hidden="true"><div class="drawer-handle"></div><div class="note-head"><strong>《<span id="noteSongTitle"></span>》笔记</strong><span id="noteSaved">自动保存</span></div><textarea id="noteEditor" placeholder="写下练习感受、指法、难点或下次要注意的地方…"></textarea><div class="note-footer"><button class="note-anchor" id="restorePositionButton">回到上次阅读位置</button><span>点击遮罩或下滑收起</span></div></aside>\
   <div class="import-modal" id="importModal" hidden><div class="import-card"><div class="new-song-head"><strong>导入谱页</strong><button class="close-button" id="cancelImport" aria-label="关闭">×</button></div><p>已选择 <span id="importCount">0</span> 个文件。请选择放入位置。</p><div class="import-file-list" id="importFileList"></div><div class="new-song-actions"><button class="secondary-button" id="importAsNew">新建曲目并加入</button><button class="primary-button" id="importIntoCurrent">加入当前曲目</button></div></div></div>\
   <div class="new-song-modal" id="newSongModal" hidden><div class="new-song-card"><div class="new-song-head"><strong>新建曲子</strong><button class="close-button" id="cancelNewSong" aria-label="关闭">×</button></div><p>新曲目会先带一份可直接查看的六线谱模板，之后可以继续添加多张谱页。</p><label for="newSongName">曲名</label><input id="newSongName" type="text" maxlength="80" placeholder="例如：Hotel California" /><div class="new-song-actions"><button class="secondary-button" id="cancelNewSongBottom">取消</button><button class="primary-button" id="createNewSong">创建并打开</button></div></div></div>'
 
@@ -257,7 +257,7 @@ async function createNewSong() {
   state.songs = [song, ...state.songs]; state.currentSongId = song.id; saveSongs(); closeNewSong(); renderLibrary(); await renderSong(song); setStatus('曲目《' + title + '》已创建')
 }
 function saveNote() { const song = currentSong(); song.note = els.noteEditor.value; song.updatedAt = Date.now(); saveSongs(); document.querySelector('#noteSaved').textContent = '已保存'; clearTimeout(saveNote.timer); saveNote.timer = setTimeout(() => { document.querySelector('#noteSaved').textContent = '自动保存' }, 900) }
-function jumpToMeasure(start) { const index = Math.max(1, Number(start) || 1); const target = els.host.querySelector('[data-bar-index="' + (index - 1) + '"]'); if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' }); else els.scroll.scrollTo({ top: Math.max(0, (index - 1) * 180), behavior: 'smooth' }); closeNotes() }
+function restoreLastPosition() { const song = currentSong(); const target = song.lastPageId && els.host.querySelector('[data-page-id="' + song.lastPageId + '"]'); if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); else els.scroll.scrollTo({ top: song.lastScrollTop || 0, behavior: 'smooth' }); closeNotes() }
 function setBpm(value) { state.bpm = Math.max(40, Math.min(220, value)); els.bpm.textContent = state.bpm + ' BPM'; if (state.api) state.api.playbackSpeed = state.bpm / 90 }
 
 document.querySelector('#importButton').addEventListener('click', () => els.file.click())
@@ -277,7 +277,7 @@ document.querySelector('#drawerScrim').addEventListener('click', () => { closeLi
 document.querySelector('#playButton').addEventListener('click', () => state.api?.playPause())
 document.querySelector('#bpmDown').addEventListener('click', () => setBpm(state.bpm - 5))
 document.querySelector('#bpmUp').addEventListener('click', () => setBpm(state.bpm + 5))
-document.querySelector('#jumpAnchor').addEventListener('click', () => { const match = currentSong().note?.match(/\[m:(\d+)\]/); if (match) jumpToMeasure(match[1]); else { els.noteEditor.focus(); setStatus('笔记中还没有 [m:小节号] 标记') } })
+document.querySelector('#restorePositionButton').addEventListener('click', restoreLastPosition)
 els.scroll.addEventListener('scroll', updateProgress, { passive: true })
 els.noteEditor.addEventListener('input', saveNote)
 let noteStartY = 0
