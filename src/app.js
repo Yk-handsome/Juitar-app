@@ -344,7 +344,8 @@ function restoreTrash(id) {
 function openRenameSong() { const song = currentSong(); state.songModalMode = 'rename'; els.songModalTitle.textContent = '重命名曲目'; els.songModalHint.textContent = '只修改曲目名称，谱页和笔记会保留。'; els.newSongName.value = song.title; els.newSongModal.hidden = false; requestAnimationFrame(() => { els.newSongName.focus(); els.newSongName.select() }) }
 function setImmersive(enabled) { state.immersive = enabled; document.documentElement.classList.toggle('immersive-mode', enabled); els.immersive.textContent = enabled ? '退出沉浸模式' : '沉浸模式' }
 async function toggleWakeLock() {
-  if (state.wakeLock) { await state.wakeLock.release(); state.wakeLock = null; state.keepAwake = false; els.wakeLock.textContent = '保持屏幕常亮'; setStatus('已关闭屏幕常亮'); return }
+  if (state.wakeLock || state.keepAwake) { if (state.wakeLock) await state.wakeLock.release(); state.wakeLock = null; state.keepAwake = false; window.JuitarAndroid?.setKeepScreenOn(false); els.wakeLock.textContent = '保持屏幕常亮'; setStatus('已关闭屏幕常亮'); return }
+  if (window.JuitarAndroid?.setKeepScreenOn) { window.JuitarAndroid.setKeepScreenOn(true); state.keepAwake = true; els.wakeLock.textContent = '关闭屏幕常亮'; setStatus('屏幕将保持常亮'); return }
   if (!('wakeLock' in navigator)) return setStatus('当前设备不支持屏幕常亮', true)
   try { state.wakeLock = await navigator.wakeLock.request('screen'); state.keepAwake = true; els.wakeLock.textContent = '关闭屏幕常亮'; setStatus('屏幕将保持常亮') } catch (error) { setStatus('无法开启屏幕常亮：' + error.message, true) }
 }
@@ -439,7 +440,7 @@ els.noteEditor.addEventListener('input', saveNote)
 let noteStartY = 0
 els.noteDrawer.addEventListener('touchstart', (event) => { noteStartY = event.touches[0]?.clientY || 0 }, { passive: true })
 els.noteDrawer.addEventListener('touchend', (event) => { const endY = event.changedTouches[0]?.clientY || noteStartY; if (endY - noteStartY > 60) closeNotes() }, { passive: true })
-document.addEventListener('visibilitychange', async () => { if (document.visibilityState === 'visible' && state.keepAwake && !state.wakeLock) { try { state.wakeLock = await navigator.wakeLock.request('screen') } catch {} } })
+document.addEventListener('visibilitychange', async () => { if (document.visibilityState === 'visible' && state.keepAwake) { if (window.JuitarAndroid?.setKeepScreenOn) window.JuitarAndroid.setKeepScreenOn(true); else if (!state.wakeLock) { try { state.wakeLock = await navigator.wakeLock.request('screen') } catch {} } } })
 const syncOrientation = () => document.documentElement.classList.toggle('landscape-mode', window.innerWidth > window.innerHeight && window.innerHeight < 620)
 window.addEventListener('resize', syncOrientation)
 syncOrientation()

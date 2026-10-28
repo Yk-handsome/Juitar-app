@@ -129,6 +129,9 @@ public final class MainActivity extends Activity {
         if (webView != null) webView.evaluateJavascript("window.dispatchEvent(new Event('android-incoming-file'))", null);
     }
     private final class IncomingFileBridge {
+        @JavascriptInterface public void setKeepScreenOn(boolean enabled) {
+            runOnUiThread(() -> { if (enabled) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); });
+        }
         @JavascriptInterface public int incomingCount() { return incomingBytes.size(); }
         @JavascriptInterface public String incomingBase64At(int index) { return index >= 0 && index < incomingBytes.size() ? Base64.encodeToString(incomingBytes.get(index), Base64.NO_WRAP) : ""; }
         @JavascriptInterface public String incomingNameAt(int index) { return index >= 0 && index < incomingNames.size() ? incomingNames.get(index) : "imported-score"; }
