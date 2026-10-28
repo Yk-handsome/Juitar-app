@@ -4,6 +4,8 @@ const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.inne
 const assetUrl = (path) => new URL(path, document.baseURI).href
 const SONGS_KEY = 'juitar:songs:v3'
 const CURRENT_SONG_KEY = 'juitar:current-song:v3'
+const TRASH_KEY = 'juitar:trash:v1'
+const DATA_VERSION_KEY = 'juitar:data-version'
 document.documentElement.classList.toggle('mobile-mode', isMobile)
 
 const DEFAULT_TITLE = 'Californian Evening'
@@ -62,6 +64,7 @@ const state = {
   wakeLock: null,
   keepAwake: false,
   immersive: false,
+  trash: JSON.parse(localStorage.getItem(TRASH_KEY) || '[]'),
 }
 
 if (!state.currentSongId || !state.songs.some((song) => song.id === state.currentSongId)) state.currentSongId = state.songs[0].id
@@ -81,7 +84,7 @@ app.innerHTML = '\
   </div>\
   <button class="note-fab" id="noteFab" aria-label="打开笔记">📝</button>\
   <div class="drawer-scrim" id="drawerScrim" hidden></div>\
-  <aside class="library-drawer" id="libraryDrawer" aria-hidden="true"><div class="drawer-head"><strong>我的谱夹</strong><button class="close-button" id="closeLibrary" aria-label="关闭">×</button></div><button class="new-song-button" id="newSongButton">＋ 新建曲子</button><div class="library-tools"><input id="librarySearch" type="search" placeholder="搜索曲目" /><button data-library-filter="all" class="active">全部</button><button data-library-filter="recent">最近</button><button data-library-filter="favorite">收藏</button></div><p class="drawer-hint">选择曲目继续阅读，也可以在下面管理当前曲目。</p><div class="library-list" id="libraryList"></div><section class="page-manager" id="pageManager"></section><section class="library-actions"><button id="renameSongButton">重命名当前曲目</button><button id="exportZipButton">导出曲目备份</button><button id="importZipButton">导入曲目备份</button><button id="wakeLockButton">保持屏幕常亮</button><button id="immersiveButton">沉浸模式</button></section></aside>\
+  <aside class="library-drawer" id="libraryDrawer" aria-hidden="true"><div class="drawer-head"><strong>我的谱夹</strong><button class="close-button" id="closeLibrary" aria-label="关闭">×</button></div><button class="new-song-button" id="newSongButton">＋ 新建曲子</button><div class="library-tools"><input id="librarySearch" type="search" placeholder="搜索曲目" /><button data-library-filter="all" class="active">全部</button><button data-library-filter="recent">最近</button><button data-library-filter="favorite">收藏</button></div><p class="drawer-hint">选择曲目继续阅读，也可以在下面管理当前曲目。</p><div class="library-list" id="libraryList"></div><section class="page-manager" id="pageManager"></section><section class="library-actions"><button id="renameSongButton">重命名当前曲目</button><button id="exportZipButton">导出曲目备份</button><button id="importZipButton">导入曲目备份</button><button id="recentDeleteButton">最近删除</button><button id="wakeLockButton">保持屏幕常亮</button><button id="immersiveButton">沉浸模式</button></section><section class="trash-panel" id="trashPanel" hidden></section></aside>\
   <aside class="note-drawer" id="noteDrawer" aria-hidden="true"><div class="drawer-handle"></div><div class="note-head"><strong>《<span id="noteSongTitle"></span>》笔记</strong><span id="noteSaved">自动保存</span></div><textarea id="noteEditor" placeholder="写下练习感受、指法、难点或下次要注意的地方…"></textarea><div class="note-footer"><button class="note-anchor" id="restorePositionButton">回到上次阅读位置</button><span>点击遮罩或下滑收起</span></div></aside>\
   <div class="import-modal" id="importModal" hidden><div class="import-card"><div class="new-song-head"><strong>导入谱页</strong><button class="close-button" id="cancelImport" aria-label="关闭">×</button></div><p>已选择 <span id="importCount">0</span> 个文件。请选择放入位置。</p><div class="import-file-list" id="importFileList"></div><div class="new-song-actions"><button class="secondary-button" id="importAsNew">新建曲目并加入</button><button class="primary-button" id="importIntoCurrent">加入当前曲目</button></div></div></div>\
   <div class="new-song-modal" id="newSongModal" hidden><div class="new-song-card"><div class="new-song-head"><strong id="songModalTitle">新建曲子</strong><button class="close-button" id="cancelNewSong" aria-label="关闭">×</button></div><p id="songModalHint">新曲目会先带一份可直接查看的六线谱模板，之后可以继续添加多张谱页。</p><label for="newSongName">曲名</label><input id="newSongName" type="text" maxlength="80" placeholder="例如：Hotel California" /><div class="new-song-actions"><button class="secondary-button" id="cancelNewSongBottom">取消</button><button class="primary-button" id="createNewSong">创建并打开</button></div></div></div>'
@@ -92,12 +95,12 @@ const els = {
   player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'), progress: document.querySelector('#scoreProgress'),
   library: document.querySelector('#libraryDrawer'), libraryList: document.querySelector('#libraryList'), scrim: document.querySelector('#drawerScrim'),
   noteDrawer: document.querySelector('#noteDrawer'), noteEditor: document.querySelector('#noteEditor'), noteSaved: document.querySelector('#noteSaved'),
-  newSongModal: document.querySelector('#newSongModal'), newSongName: document.querySelector('#newSongName'), songModalTitle: document.querySelector('#songModalTitle'), songModalHint: document.querySelector('#songModalHint'), pageManager: document.querySelector('#pageManager'), importModal: document.querySelector('#importModal'), importFileList: document.querySelector('#importFileList'), importCount: document.querySelector('#importCount'), librarySearch: document.querySelector('#librarySearch'), renameSong: document.querySelector('#renameSongButton'), exportZip: document.querySelector('#exportZipButton'), importZip: document.querySelector('#importZipButton'), zipFile: document.querySelector('#zipInput'), wakeLock: document.querySelector('#wakeLockButton'), immersive: document.querySelector('#immersiveButton'),
+  newSongModal: document.querySelector('#newSongModal'), newSongName: document.querySelector('#newSongName'), songModalTitle: document.querySelector('#songModalTitle'), songModalHint: document.querySelector('#songModalHint'), pageManager: document.querySelector('#pageManager'), trashPanel: document.querySelector('#trashPanel'), importModal: document.querySelector('#importModal'), importFileList: document.querySelector('#importFileList'), importCount: document.querySelector('#importCount'), librarySearch: document.querySelector('#librarySearch'), renameSong: document.querySelector('#renameSongButton'), exportZip: document.querySelector('#exportZipButton'), importZip: document.querySelector('#importZipButton'), recentDelete: document.querySelector('#recentDeleteButton'), zipFile: document.querySelector('#zipInput'), wakeLock: document.querySelector('#wakeLockButton'), immersive: document.querySelector('#immersiveButton'),
 }
 
 function currentSong() { return state.songs.find((song) => song.id === state.currentSongId) || state.songs[0] }
 function escapeHtml(value) { return String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char]) }
-function saveSongs() { localStorage.setItem(SONGS_KEY, JSON.stringify(state.songs)); localStorage.setItem(CURRENT_SONG_KEY, state.currentSongId) }
+function saveSongs() { localStorage.setItem(SONGS_KEY, JSON.stringify(state.songs)); localStorage.setItem(CURRENT_SONG_KEY, state.currentSongId); localStorage.setItem(TRASH_KEY, JSON.stringify(state.trash)); localStorage.setItem(DATA_VERSION_KEY, '2') }
 function setStatus(text, error = false) { els.status.textContent = text; els.status.classList.toggle('error', error); els.status.classList.toggle('visible', Boolean(text)); clearTimeout(setStatus.timer); if (!error && text.includes('已')) setStatus.timer = setTimeout(() => els.status.classList.remove('visible'), 1800) }
 function setTitle(title) { els.title.textContent = title; els.title.title = title; els.noteTitle.textContent = title; document.title = 'Juitar · ' + title }
 function setKind(kind) { state.kind = kind; els.player.hidden = !state.hasVector }
@@ -252,9 +255,22 @@ function renderLibrary() {
   els.pageManager.querySelectorAll('[data-page-remove]').forEach((button) => button.addEventListener('click', () => removePage(button.dataset.pageRemove)))
   els.pageManager.querySelector('[data-favorite-song]')?.addEventListener('click', () => { current.favorite = !current.favorite; saveSongs(); renderLibrary() })
   els.library.querySelectorAll('[data-library-filter]').forEach((button) => button.classList.toggle('active', button.dataset.libraryFilter === state.libraryFilter))
+  renderTrash()
 }
 function movePage(pageId, delta) { const song = currentSong(); const index = song.pages.findIndex((page) => page.id === pageId); const next = index + delta; if (index < 0 || next < 0 || next >= song.pages.length) return; [song.pages[index], song.pages[next]] = [song.pages[next], song.pages[index]]; song.updatedAt = Date.now(); saveSongs(); renderLibrary(); renderSong(song) }
-function removePage(pageId) { const song = currentSong(); if (song.pages.length <= 1) return setStatus('至少保留一页谱面', true); const page = song.pages.find((item) => item.id === pageId); if (!page || !window.confirm('删除这张谱页？')) return; song.pages = song.pages.filter((item) => item.id !== pageId); song.updatedAt = Date.now(); saveSongs(); renderLibrary(); renderSong(song) }
+function removePage(pageId) { const song = currentSong(); if (song.pages.length <= 1) return setStatus('至少保留一页谱面', true); const index = song.pages.findIndex((item) => item.id === pageId); const page = song.pages[index]; if (!page || !window.confirm('移到最近删除？')) return; song.pages.splice(index, 1); state.trash.unshift({ id: uid('trash'), kind: 'page', songId: song.id, page, index, deletedAt: Date.now() }); song.updatedAt = Date.now(); saveSongs(); renderLibrary(); renderSong(song); setStatus('谱页已移到最近删除') }
+function renderTrash() {
+  if (!state.trash.length) { els.trashPanel.innerHTML = '<div class="trash-empty">最近删除为空</div>'; return }
+  els.trashPanel.innerHTML = '<div class="trash-head"><strong>最近删除</strong><button id="closeTrash">收起</button></div>' + state.trash.map((item) => '<div class="trash-item"><span>' + (item.kind === 'page' ? '谱页' : '曲目') + '</span><strong>' + escapeHtml(item.page?.name || item.song?.title || '未命名') + '</strong><button data-restore="' + item.id + '">恢复</button></div>').join('')
+  els.trashPanel.querySelector('#closeTrash')?.addEventListener('click', () => { els.trashPanel.hidden = true })
+  els.trashPanel.querySelectorAll('[data-restore]').forEach((button) => button.addEventListener('click', () => restoreTrash(button.dataset.restore)))
+}
+function restoreTrash(id) {
+  const item = state.trash.find((entry) => entry.id === id); if (!item) return
+  if (item.kind === 'page') { const song = state.songs.find((entry) => entry.id === item.songId); if (song) song.pages.splice(Math.min(item.index, song.pages.length), 0, item.page) }
+  if (item.kind === 'song' && item.song) state.songs.unshift(item.song)
+  state.trash = state.trash.filter((entry) => entry.id !== id); saveSongs(); renderLibrary(); renderTrash(); renderSong(currentSong()); setStatus('已恢复')
+}
 function openRenameSong() { const song = currentSong(); state.songModalMode = 'rename'; els.songModalTitle.textContent = '重命名曲目'; els.songModalHint.textContent = '只修改曲目名称，谱页和笔记会保留。'; els.newSongName.value = song.title; els.newSongModal.hidden = false; requestAnimationFrame(() => { els.newSongName.focus(); els.newSongName.select() }) }
 function setImmersive(enabled) { state.immersive = enabled; document.documentElement.classList.toggle('immersive-mode', enabled); els.immersive.textContent = enabled ? '退出沉浸模式' : '沉浸模式' }
 async function toggleWakeLock() {
@@ -274,6 +290,9 @@ async function importZipFile(file) {
   try {
     const files = window.fflate.unzipSync(new Uint8Array(await file.arrayBuffer()))
     const decoder = new TextDecoder()
+    if (!files['manifest.json'] || !files['song.json']) throw new Error('不是 Juitar 备份文件')
+    const manifest = JSON.parse(decoder.decode(files['manifest.json']))
+    if (manifest.app !== 'Juitar' || Number(manifest.schemaVersion) > 1) throw new Error('备份版本不兼容')
     const songData = JSON.parse(decoder.decode(files['song.json']))
     const imported = { ...songData, id: uid('song'), title: songData.title + '（恢复）', lastPageId: null, lastScrollTop: 0, lastOpenedAt: Date.now(), updatedAt: Date.now(), pages: [] }
     for (let index = 0; index < (songData.pages || []).length; index += 1) {
@@ -316,6 +335,7 @@ els.renameSong.addEventListener('click', openRenameSong)
 els.exportZip.addEventListener('click', exportZip)
 els.importZip.addEventListener('click', () => els.zipFile.click())
 els.zipFile.addEventListener('change', (event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) importZipFile(file) })
+els.recentDelete.addEventListener('click', () => { els.trashPanel.hidden = !els.trashPanel.hidden; if (!els.trashPanel.hidden) renderTrash() })
 els.wakeLock.addEventListener('click', toggleWakeLock)
 els.immersive.addEventListener('click', () => setImmersive(!state.immersive))
 document.querySelector('#cancelNewSong').addEventListener('click', closeNewSong)

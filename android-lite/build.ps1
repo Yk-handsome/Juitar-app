@@ -40,11 +40,15 @@ with ZipFile(build / 'base.apk', 'w') as z:
             z.write(p, rel, compress_type=mode)
 '@.Replace('ROOT_PATH', $root).Replace('BUILD_PATH', $build) | python -
 & (Join-Path $bt 'zipalign.exe') -f -p 4 (Join-Path $build 'base.apk') (Join-Path $build 'aligned.apk')
-$keystore = Join-Path $build 'debug.keystore'
+$keystore = if ($env:JUITAR_KEYSTORE) { $env:JUITAR_KEYSTORE } else { Join-Path $PSScriptRoot 'keystore/juitar-release.keystore' }
+$storepass = if ($env:JUITAR_KEYSTORE_PASSWORD) { $env:JUITAR_KEYSTORE_PASSWORD } else { 'juitar-local-release' }
+$keypass = if ($env:JUITAR_KEY_PASSWORD) { $env:JUITAR_KEY_PASSWORD } else { $storepass }
+$alias = if ($env:JUITAR_KEY_ALIAS) { $env:JUITAR_KEY_ALIAS } else { 'juitar-release' }
 $keytool = (Get-Command keytool -ErrorAction SilentlyContinue).Source
 if ([string]::IsNullOrWhiteSpace($keytool) -and $env:JAVA_HOME) { $keytool = Join-Path $env:JAVA_HOME 'bin/keytool.exe' }
 if ([string]::IsNullOrWhiteSpace($keytool)) { $keytool = 'F:/compiler_tools/java/java_version_21/bin/keytool.exe' }
-if (!(Test-Path $keystore)) { & $keytool -genkeypair -keystore $keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Android Debug,O=Android,C=US' | Out-Null }
+New-Item -ItemType Directory -Force (Split-Path $keystore -Parent) | Out-Null
+if (!(Test-Path $keystore)) { & $keytool -genkeypair -keystore $keystore -storepass $storepass -keypass $keypass -alias $alias -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Juitar Release,O=Juitar,C=CN' | Out-Null }
 New-Item -ItemType Directory -Force (Join-Path $root (Split-Path $Output -Parent)) | Out-Null
-& (Join-Path $bt 'apksigner.bat') sign --ks $keystore --ks-pass pass:android --key-pass pass:android --out (Join-Path $root $Output) (Join-Path $build 'aligned.apk')
+& (Join-Path $bt 'apksigner.bat') sign --ks $keystore --ks-pass ('pass:' + $storepass) --key-pass ('pass:' + $keypass) --ks-key-alias $alias --out (Join-Path $root $Output) (Join-Path $build 'aligned.apk')
 & (Join-Path $bt 'apksigner.bat') verify --verbose (Join-Path $root $Output)

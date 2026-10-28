@@ -25,3 +25,4 @@ src-tauri/target
 *.sw?
 android-lite/build/
 release-apk/*.idsig
+android-lite/keystore/
