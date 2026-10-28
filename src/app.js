@@ -65,6 +65,7 @@ const state = {
   keepAwake: false,
   immersive: false,
   trash: JSON.parse(localStorage.getItem(TRASH_KEY) || '[]'),
+  pdfjsPromise: null,
 }
 
 if (!state.currentSongId || !state.songs.some((song) => song.id === state.currentSongId)) state.currentSongId = state.songs[0].id
@@ -178,11 +179,18 @@ function appendImagePage(page, blob, index) {
   const url = URL.createObjectURL(blob); state.objectUrls.push(url); image.src = url
   stage.append(label, image); els.host.append(stage); enablePinchZoom(stage, image)
 }
-function appendPdfPage(page, blob, index) {
+async function appendPdfPage(page, blob, index) {
   const stage = document.createElement('section'); stage.className = 'score-page pdf-stage'; stage.dataset.pageId = page.id
   const label = document.createElement('div'); label.className = 'page-label'; label.textContent = '第 ' + (index + 1) + ' 页 · PDF'
-  const frame = document.createElement('iframe'); frame.className = 'pdf-viewer'; frame.src = URL.createObjectURL(blob); frame.title = page.name
-  state.objectUrls.push(frame.src); stage.append(label, frame); els.host.append(stage)
+  stage.append(label); els.host.append(stage)
+  if (!state.pdfjsPromise) state.pdfjsPromise = import(assetUrl('pdfjs/pdf.min.mjs'))
+  const pdfjs = await state.pdfjsPromise; pdfjs.GlobalWorkerOptions.workerSrc = assetUrl('pdfjs/pdf.worker.min.mjs')
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const pdfPage = await pdf.getPage(pageNumber); const base = pdfPage.getViewport({ scale: 1 }); const scale = Math.max(1, (els.scroll.clientWidth - 8) / base.width); const viewport = pdfPage.getViewport({ scale })
+    const canvas = document.createElement('canvas'); canvas.className = 'pdf-canvas'; canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height); canvas.setAttribute('aria-label', page.name + ' 第 ' + pageNumber + ' 页')
+    stage.append(canvas); await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport }).promise
+  }
 }
 function createAlphaTabApi(host, kind, token) {
   if (!alphaTab?.AlphaTabApi) throw new Error('当前页面未加载 alphaTab，请使用 npm run dev 或 APK')
@@ -215,7 +223,7 @@ async function renderSong(song) {
     const page = song.pages[index]; const blob = page.blobId ? await readBlob(page.blobId) : null
     if (token !== state.renderToken) return
     if (page.type === 'image' && blob) appendImagePage(page, blob, index)
-    else if (page.type === 'pdf' && blob) appendPdfPage(page, blob, index)
+    else if (page.type === 'pdf' && blob) await appendPdfPage(page, blob, index)
     else if (['gp', 'musicxml', 'alphatex'].includes(page.type)) await appendVectorPage(page, blob, index, token)
   }
   if (token === state.renderToken) {
