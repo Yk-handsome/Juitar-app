@@ -1,4 +1,4 @@
-const VERSION = '0.1.0'
+const VERSION = '0.2.0'
 const alphaTab = window.alphaTab
 const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 760
 const assetUrl = (path) => new URL(path, document.baseURI).href
@@ -434,3 +434,4 @@ function openIncomingAndroidFile() {
 }
 window.addEventListener('android-incoming-file', openIncomingAndroidFile)
 setTimeout(openIncomingAndroidFile, 300)
+

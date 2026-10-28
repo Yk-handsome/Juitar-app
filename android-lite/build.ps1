@@ -1,6 +1,6 @@
 param(
   [string]$SdkRoot = $env:ANDROID_SDK_ROOT,
-  [string]$Output = "release-apk/Juitar-v0.1.0-arm64.apk"
+  [string]$Output = "release-apk/Juitar-v0.2.0-arm64.apk"
 )
 $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($SdkRoot)) { throw 'ANDROID_SDK_ROOT is required' }
@@ -52,3 +52,4 @@ if (!(Test-Path $keystore)) { & $keytool -genkeypair -keystore $keystore -storep
 New-Item -ItemType Directory -Force (Join-Path $root (Split-Path $Output -Parent)) | Out-Null
 & (Join-Path $bt 'apksigner.bat') sign --ks $keystore --ks-pass ('pass:' + $storepass) --key-pass ('pass:' + $keypass) --ks-key-alias $alias --out (Join-Path $root $Output) (Join-Path $build 'aligned.apk')
 & (Join-Path $bt 'apksigner.bat') verify --verbose (Join-Path $root $Output)
+
