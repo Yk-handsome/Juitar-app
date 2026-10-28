@@ -302,7 +302,7 @@ function renderLibrary() {
   els.recentStrip.querySelectorAll('[data-recent-song]').forEach((button) => button.addEventListener('click', async () => { const song = state.songs.find((item) => item.id === button.dataset.recentSong); if (!song) return; setSong(song); closeLibrary(); await renderSong(song) }))
   revokeThumbnailUrls()
   const query = state.libraryQuery.trim().toLowerCase()
-  let songs = state.songs.filter((song) => !query || song.title.toLowerCase().includes(query))
+  let songs = state.songs.filter((song) => !query || [song.title, song.author, song.tuning].filter(Boolean).join(' ').toLowerCase().includes(query))
   if (state.libraryFilter === 'favorite') songs = songs.filter((song) => song.favorite)
   if (state.libraryFilter === 'recent') songs = songs.sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0)).slice(0, 12)
   els.libraryList.innerHTML = songs.map((song) => '<button class="library-item ' + (song.id === current.id ? 'active' : '') + '" data-song-id="' + song.id + '"><span class="library-thumb" data-song-thumb="' + song.id + '"><span>' + (song.favorite ? '★' : '🎼') + '</span></span><span class="library-copy"><strong>' + escapeHtml(song.title) + '</strong><small>' + song.pages.length + ' 页 · ' + escapeHtml(song.tuning || 'Standard') + (song.capo ? ' · Capo ' + song.capo : '') + ' · ' + (song.defaultBpm || 90) + ' BPM</small></span><span class="library-arrow">›</span></button>').join('') || '<div class="library-empty">没有找到曲目</div>'
