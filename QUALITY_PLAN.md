@@ -153,7 +153,7 @@ Juitar 是本地优先的移动吉他谱夹。完整用户流程是：
 
 npm run test
 npm run build
-powershell -ExecutionPolicy Bypass -File android-lite/build.ps1
+npm run verify:all
 
 同时确认：
 
@@ -165,6 +165,7 @@ powershell -ExecutionPolicy Bypass -File android-lite/build.ps1
 - 真机项目已记录。
 - 工作区干净。
 - Git 已提交并推送。
+- APK 必须由当前工作树重新构建后再安装验证。
 
 ## v0.2.0 实际验收记录
 
