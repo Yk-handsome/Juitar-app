@@ -108,6 +108,12 @@ public final class MainActivity extends Activity {
             Log.i("JuitarWeb", "incoming=" + incomingName + " bytes=" + incomingBytes.length);
         } catch (Exception error) { Log.e("JuitarWeb", "incoming file=" + error); incomingBytes = null; }
     }
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        prepareIncomingFile(intent);
+        if (webView != null) webView.evaluateJavascript("window.dispatchEvent(new Event('android-incoming-file'))", null);
+    }
     private final class IncomingFileBridge {
         @JavascriptInterface public boolean hasIncomingFile() { return incomingBytes != null && incomingBytes.length > 0; }
         @JavascriptInterface public String incomingBase64() { return incomingBytes == null ? "" : Base64.encodeToString(incomingBytes, Base64.NO_WRAP); }
