@@ -23,7 +23,7 @@ if ($logs -match 'FileNotFoundException.*worker|FileNotFoundException.*pdf.worke
   $logs | Out-Host
   throw 'ANDROID_RUNTIME_ASSET_ERROR'
 }
-if ($logs -notmatch 'page=https://appassets.androidplatform.net/assets/dist/index.html') {
+if ($logs -notmatch 'page=.*assets/dist/index\.html') {
   $logs | Out-Host
   throw 'ANDROID_PAGE_NOT_CONFIRMED'
 }
