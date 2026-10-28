@@ -56,6 +56,7 @@ const state = {
   playing: false,
   objectUrls: [],
   thumbnailUrls: [],
+  pageStripUrls: [],
   pinch: { active: false, distance: 0, scale: 1 },
   scrollSaveTimer: 0,
   pendingFiles: [],
@@ -81,6 +82,7 @@ app.innerHTML = '\
   </header>\
   <main class="score-main"><div class="score-scroll" id="scoreScroll"><div class="score-host" id="scoreHost" aria-live="polite"></div></div></main>\
   <div class="score-status" id="scoreStatus"></div><div class="score-progress" id="scoreProgress">第 1 / 1 页</div>\
+  <div class="page-strip" id="pageStrip" hidden></div>\
   <nav class="landscape-nav" id="landscapeNav" aria-label="横屏翻页"><button id="prevPage" aria-label="上一页">‹</button><span id="landscapePage">1 / 1</span><button id="nextPage" aria-label="下一页">›</button></nav>\
   <div class="float-player" id="floatPlayer" hidden>\
     <button id="playButton" aria-label="播放或暂停"><span>▶</span></button><button id="bpmDown" aria-label="降低 BPM">−5</button><strong id="bpmValue">90 BPM</strong><button id="bpmUp" aria-label="提高 BPM">＋5</button>\
@@ -95,7 +97,7 @@ app.innerHTML = '\
 const els = {
   title: document.querySelector('#songTitle'), noteTitle: document.querySelector('#noteSongTitle'), host: document.querySelector('#scoreHost'),
   scroll: document.querySelector('#scoreScroll'), status: document.querySelector('#scoreStatus'), file: document.querySelector('#fileInput'),
-  player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'), progress: document.querySelector('#scoreProgress'), landscapePage: document.querySelector('#landscapePage'),
+  player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'), progress: document.querySelector('#scoreProgress'), pageStrip: document.querySelector('#pageStrip'), landscapePage: document.querySelector('#landscapePage'),
   library: document.querySelector('#libraryDrawer'), libraryList: document.querySelector('#libraryList'), recentStrip: document.querySelector('#recentStrip'), scrim: document.querySelector('#drawerScrim'),
   noteDrawer: document.querySelector('#noteDrawer'), noteEditor: document.querySelector('#noteEditor'), noteSaved: document.querySelector('#noteSaved'),
   newSongModal: document.querySelector('#newSongModal'), newSongName: document.querySelector('#newSongName'), songModalTitle: document.querySelector('#songModalTitle'), songModalHint: document.querySelector('#songModalHint'), pageManager: document.querySelector('#pageManager'), trashPanel: document.querySelector('#trashPanel'), importModal: document.querySelector('#importModal'), importFileList: document.querySelector('#importFileList'), importCount: document.querySelector('#importCount'), librarySearch: document.querySelector('#librarySearch'), renameSong: document.querySelector('#renameSongButton'), deleteSong: document.querySelector('#deleteSongButton'), exportZip: document.querySelector('#exportZipButton'), importZip: document.querySelector('#importZipButton'), recentDelete: document.querySelector('#recentDeleteButton'), zipFile: document.querySelector('#zipInput'), wakeLock: document.querySelector('#wakeLockButton'), immersive: document.querySelector('#immersiveButton'),
@@ -109,6 +111,7 @@ function setTitle(title) { els.title.textContent = title; els.title.title = titl
 function setKind(kind) { state.kind = kind; els.player.hidden = !state.hasVector }
 function revokeObjectUrls() { state.objectUrls.forEach((url) => URL.revokeObjectURL(url)); state.objectUrls = [] }
 function revokeThumbnailUrls() { state.thumbnailUrls.forEach((url) => URL.revokeObjectURL(url)); state.thumbnailUrls = [] }
+function revokePageStripUrls() { state.pageStripUrls.forEach((url) => URL.revokeObjectURL(url)); state.pageStripUrls = [] }
 function openDb(name = 'juitar-v3') {
   return new Promise((resolve) => {
     if (!('indexedDB' in window)) return resolve(null)
@@ -144,7 +147,7 @@ function fileKind(file) {
   return null
 }
 function destroyApi() { if (state.api && typeof state.api.destroy === 'function') state.api.destroy(); state.api = null }
-function clearScore() { destroyApi(); revokeObjectUrls(); els.host.replaceChildren(); els.host.className = 'score-host'; state.hasVector = false; state.playing = false; els.player.hidden = true; state.renderToken += 1 }
+function clearScore() { destroyApi(); revokeObjectUrls(); revokePageStripUrls(); els.host.replaceChildren(); els.host.className = 'score-host'; els.pageStrip.hidden = true; els.pageStrip.replaceChildren(); state.hasVector = false; state.playing = false; els.player.hidden = true; state.renderToken += 1 }
 function touchSong(song) { song.lastOpenedAt = Date.now(); song.updatedAt = Date.now(); saveSongs() }
 function setSong(song) { state.currentSongId = song.id; state.currentPageId = song.lastPageId || null; touchSong(song); setTitle(song.title); els.noteEditor.value = song.note || ''; renderLibrary() }
 function updateProgress() {
@@ -159,6 +162,7 @@ function updateProgress() {
   song.lastScrollTop = els.scroll.scrollTop
   els.progress.textContent = '第 ' + (index + 1) + ' / ' + pages.length + ' 页'
   els.landscapePage.textContent = (index + 1) + ' / ' + pages.length
+  els.pageStrip.querySelectorAll('[data-page-jump]').forEach((button) => button.classList.toggle('active', button.dataset.pageJump === state.currentPageId))
   clearTimeout(state.scrollSaveTimer)
   state.scrollSaveTimer = setTimeout(saveSongs, 350)
 }
@@ -249,8 +253,18 @@ async function renderSong(song) {
   }
   if (token === state.renderToken) {
     setKind(state.hasVector ? 'vector' : (song.pages[0]?.type || 'image')); setStatus(song.pages.length + ' 个谱页已打开')
-    requestAnimationFrame(() => { els.scroll.scrollTop = Number(song.lastScrollTop) || 0; updateProgress() })
+    requestAnimationFrame(() => { els.scroll.scrollTop = Number(song.lastScrollTop) || 0; renderPageStrip(song); updateProgress() })
   }
+}
+async function renderPageStrip(song) {
+  if (song.pages.length <= 1) { els.pageStrip.hidden = true; return }
+  els.pageStrip.hidden = false; els.pageStrip.replaceChildren()
+  song.pages.forEach((page, index) => {
+    const button = document.createElement('button'); button.className = 'page-strip-item'; button.dataset.pageJump = page.id; button.innerHTML = '<span>' + (index + 1) + '</span>'
+    if (page.thumbnail) button.style.backgroundImage = 'url("' + page.thumbnail + '")'
+    button.addEventListener('click', () => jumpToPage(page.id)); els.pageStrip.append(button)
+    if (!page.thumbnail && page.type === 'image' && page.blobId) readBlob(page.blobId).then((blob) => { if (!blob) return; const url = URL.createObjectURL(blob); state.pageStripUrls.push(url); button.style.backgroundImage = 'url("' + url + '")' })
+  })
 }
 function openImportPreview(files) {
   state.pendingFiles = [...files].sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }))
