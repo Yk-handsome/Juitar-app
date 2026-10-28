@@ -65,7 +65,7 @@ const state = {
   wakeLock: null,
   keepAwake: false,
   immersive: false,
-  trash: JSON.parse(localStorage.getItem(TRASH_KEY) || '[]'),
+  trash: JSON.parse(localStorage.getItem(TRASH_KEY) || '[]').filter((item) => Date.now() - Number(item.deletedAt || 0) < 30 * 24 * 60 * 60 * 1000),
   pdfjsPromise: null,
 }
 
@@ -338,7 +338,10 @@ async function importZipFile(file) {
     const manifest = JSON.parse(decoder.decode(files['manifest.json']))
     if (manifest.app !== 'Juitar' || Number(manifest.schemaVersion) > 1) throw new Error('备份版本不兼容')
     const songData = JSON.parse(decoder.decode(files['song.json']))
-    const imported = { ...songData, id: uid('song'), title: songData.title + '（恢复）', lastPageId: null, lastScrollTop: 0, lastOpenedAt: Date.now(), updatedAt: Date.now(), pages: [] }
+    if (!songData.title || !Array.isArray(songData.pages)) throw new Error('备份曲目结构无效')
+    const baseTitle = songData.title + '（恢复）'; let restoredTitle = baseTitle; let suffix = 2
+    while (state.songs.some((song) => song.title === restoredTitle)) restoredTitle = baseTitle + ' ' + suffix++
+    const imported = { ...songData, id: uid('song'), title: restoredTitle, lastPageId: null, lastScrollTop: 0, lastOpenedAt: Date.now(), updatedAt: Date.now(), pages: [] }
     for (let index = 0; index < (songData.pages || []).length; index += 1) {
       const source = songData.pages[index]; const page = { ...source, id: uid('page') }
       const prefix = 'pages/' + String(index + 1).padStart(3, '0') + '-'
