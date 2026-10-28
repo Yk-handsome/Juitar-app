@@ -81,6 +81,7 @@ app.innerHTML = '\
   </header>\
   <main class="score-main"><div class="score-scroll" id="scoreScroll"><div class="score-host" id="scoreHost" aria-live="polite"></div></div></main>\
   <div class="score-status" id="scoreStatus"></div><div class="score-progress" id="scoreProgress">第 1 / 1 页</div>\
+  <nav class="landscape-nav" id="landscapeNav" aria-label="横屏翻页"><button id="prevPage" aria-label="上一页">‹</button><span id="landscapePage">1 / 1</span><button id="nextPage" aria-label="下一页">›</button></nav>\
   <div class="float-player" id="floatPlayer" hidden>\
     <button id="playButton" aria-label="播放或暂停"><span>▶</span></button><button id="bpmDown" aria-label="降低 BPM">−5</button><strong id="bpmValue">90 BPM</strong><button id="bpmUp" aria-label="提高 BPM">＋5</button>\
   </div>\
@@ -94,7 +95,7 @@ app.innerHTML = '\
 const els = {
   title: document.querySelector('#songTitle'), noteTitle: document.querySelector('#noteSongTitle'), host: document.querySelector('#scoreHost'),
   scroll: document.querySelector('#scoreScroll'), status: document.querySelector('#scoreStatus'), file: document.querySelector('#fileInput'),
-  player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'), progress: document.querySelector('#scoreProgress'),
+  player: document.querySelector('#floatPlayer'), play: document.querySelector('#playButton'), bpm: document.querySelector('#bpmValue'), progress: document.querySelector('#scoreProgress'), landscapePage: document.querySelector('#landscapePage'),
   library: document.querySelector('#libraryDrawer'), libraryList: document.querySelector('#libraryList'), scrim: document.querySelector('#drawerScrim'),
   noteDrawer: document.querySelector('#noteDrawer'), noteEditor: document.querySelector('#noteEditor'), noteSaved: document.querySelector('#noteSaved'),
   newSongModal: document.querySelector('#newSongModal'), newSongName: document.querySelector('#newSongName'), songModalTitle: document.querySelector('#songModalTitle'), songModalHint: document.querySelector('#songModalHint'), pageManager: document.querySelector('#pageManager'), trashPanel: document.querySelector('#trashPanel'), importModal: document.querySelector('#importModal'), importFileList: document.querySelector('#importFileList'), importCount: document.querySelector('#importCount'), librarySearch: document.querySelector('#librarySearch'), renameSong: document.querySelector('#renameSongButton'), deleteSong: document.querySelector('#deleteSongButton'), exportZip: document.querySelector('#exportZipButton'), importZip: document.querySelector('#importZipButton'), recentDelete: document.querySelector('#recentDeleteButton'), zipFile: document.querySelector('#zipInput'), wakeLock: document.querySelector('#wakeLockButton'), immersive: document.querySelector('#immersiveButton'),
@@ -157,8 +158,15 @@ function updateProgress() {
   song.lastPageId = state.currentPageId
   song.lastScrollTop = els.scroll.scrollTop
   els.progress.textContent = '第 ' + (index + 1) + ' / ' + pages.length + ' 页'
+  els.landscapePage.textContent = (index + 1) + ' / ' + pages.length
   clearTimeout(state.scrollSaveTimer)
   state.scrollSaveTimer = setTimeout(saveSongs, 350)
+}
+function goToPage(delta) {
+  const pages = Array.from(els.host.querySelectorAll('.score-page')); if (!pages.length) return
+  const currentIndex = Math.max(0, pages.findIndex((page) => page.dataset.pageId === currentSong().lastPageId))
+  const target = pages[Math.min(pages.length - 1, Math.max(0, currentIndex + delta))]
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 function jumpToPage(pageId) { const target = els.host.querySelector('[data-page-id="' + pageId + '"]'); if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); currentSong().lastPageId = pageId; saveSongs(); updateProgress() } }
 function enablePinchZoom(stage, image) {
@@ -392,6 +400,8 @@ document.querySelector('#playButton').addEventListener('click', () => state.api?
 document.querySelector('#bpmDown').addEventListener('click', () => setBpm(state.bpm - 5))
 document.querySelector('#bpmUp').addEventListener('click', () => setBpm(state.bpm + 5))
 document.querySelector('#restorePositionButton').addEventListener('click', restoreLastPosition)
+document.querySelector('#prevPage').addEventListener('click', () => goToPage(-1))
+document.querySelector('#nextPage').addEventListener('click', () => goToPage(1))
 els.scroll.addEventListener('scroll', updateProgress, { passive: true })
 els.noteEditor.addEventListener('input', saveNote)
 let noteStartY = 0
