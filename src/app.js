@@ -202,6 +202,9 @@ async function appendPdfPage(page, blob, index) {
     const pdfPage = await pdf.getPage(pageNumber); const base = pdfPage.getViewport({ scale: 1 }); const scale = Math.max(1, (els.scroll.clientWidth - 8) / base.width); const viewport = pdfPage.getViewport({ scale })
     const canvas = document.createElement('canvas'); canvas.className = 'pdf-canvas'; canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height); canvas.setAttribute('aria-label', page.name + ' 第 ' + pageNumber + ' 页')
     stage.append(canvas); await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport }).promise
+    if (pageNumber === 1 && !page.thumbnail) {
+      const thumb = document.createElement('canvas'); const thumbWidth = 220; const thumbHeight = Math.round(canvas.height * (thumbWidth / canvas.width)); thumb.width = thumbWidth; thumb.height = thumbHeight; thumb.getContext('2d').drawImage(canvas, 0, 0, thumbWidth, thumbHeight); page.thumbnail = thumb.toDataURL('image/jpeg', .55); currentSong().updatedAt = Date.now(); saveSongs(); renderLibrary()
+    }
   }
 }
 function createAlphaTabApi(host, kind, token) {
@@ -294,8 +297,8 @@ function renderLibrary() {
 async function hydrateThumbnails(songs, current) {
   const thumbPages = []
   for (const song of songs) { const page = song.pages.find((entry) => entry.type === 'image' && entry.blobId); if (page) thumbPages.push({ target: els.libraryList.querySelector('[data-song-thumb="' + song.id + '"]'), page }) }
-  for (const { target, page } of thumbPages) { if (!target) continue; const blob = await readBlob(page.blobId); if (!blob) continue; const url = URL.createObjectURL(blob); state.thumbnailUrls.push(url); target.style.backgroundImage = 'url("' + url + '")'; target.classList.add('has-image') }
-  for (const page of current.pages.filter((entry) => entry.type === 'image' && entry.blobId)) { const target = els.pageManager.querySelector('[data-page-thumb="' + page.id + '"]'); if (!target) continue; const blob = await readBlob(page.blobId); if (!blob) continue; const url = URL.createObjectURL(blob); state.thumbnailUrls.push(url); target.style.backgroundImage = 'url("' + url + '")'; target.classList.add('has-image') }
+  for (const { target, page } of thumbPages) { if (!target) continue; if (page.thumbnail) { target.style.backgroundImage = 'url("' + page.thumbnail + '")'; target.classList.add('has-image'); continue } const blob = await readBlob(page.blobId); if (!blob) continue; const url = URL.createObjectURL(blob); state.thumbnailUrls.push(url); target.style.backgroundImage = 'url("' + url + '")'; target.classList.add('has-image') }
+  for (const page of current.pages.filter((entry) => entry.type === 'image' && entry.blobId || entry.thumbnail)) { const target = els.pageManager.querySelector('[data-page-thumb="' + page.id + '"]'); if (!target) continue; if (page.thumbnail) { target.style.backgroundImage = 'url("' + page.thumbnail + '")'; target.classList.add('has-image'); continue } const blob = await readBlob(page.blobId); if (!blob) continue; const url = URL.createObjectURL(blob); state.thumbnailUrls.push(url); target.style.backgroundImage = 'url("' + url + '")'; target.classList.add('has-image') }
 }
 function movePage(pageId, delta) { const song = currentSong(); const index = song.pages.findIndex((page) => page.id === pageId); const next = index + delta; if (index < 0 || next < 0 || next >= song.pages.length) return; [song.pages[index], song.pages[next]] = [song.pages[next], song.pages[index]]; song.updatedAt = Date.now(); saveSongs(); renderLibrary(); renderSong(song) }
 function removePage(pageId) { const song = currentSong(); if (song.pages.length <= 1) return setStatus('至少保留一页谱面', true); const index = song.pages.findIndex((item) => item.id === pageId); const page = song.pages[index]; if (!page || !window.confirm('移到最近删除？')) return; song.pages.splice(index, 1); state.trash.unshift({ id: uid('trash'), kind: 'page', songId: song.id, page, index, deletedAt: Date.now() }); song.updatedAt = Date.now(); saveSongs(); renderLibrary(); renderSong(song); setStatus('谱页已移到最近删除') }
