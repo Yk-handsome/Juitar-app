@@ -55,6 +55,7 @@ const state = {
   bpm: 90,
   playing: false,
   objectUrls: [],
+  thumbnailUrls: [],
   pinch: { active: false, distance: 0, scale: 1 },
   scrollSaveTimer: 0,
   pendingFiles: [],
@@ -106,6 +107,7 @@ function setStatus(text, error = false) { els.status.textContent = text; els.sta
 function setTitle(title) { els.title.textContent = title; els.title.title = title; els.noteTitle.textContent = title; document.title = 'Juitar · ' + title }
 function setKind(kind) { state.kind = kind; els.player.hidden = !state.hasVector }
 function revokeObjectUrls() { state.objectUrls.forEach((url) => URL.revokeObjectURL(url)); state.objectUrls = [] }
+function revokeThumbnailUrls() { state.thumbnailUrls.forEach((url) => URL.revokeObjectURL(url)); state.thumbnailUrls = [] }
 function openDb(name = 'juitar-v3') {
   return new Promise((resolve) => {
     if (!('indexedDB' in window)) return resolve(null)
@@ -259,13 +261,14 @@ async function addFilesToCurrentSong(files) {
 }
 function renderLibrary() {
   const current = currentSong()
+  revokeThumbnailUrls()
   const query = state.libraryQuery.trim().toLowerCase()
   let songs = state.songs.filter((song) => !query || song.title.toLowerCase().includes(query))
   if (state.libraryFilter === 'favorite') songs = songs.filter((song) => song.favorite)
   if (state.libraryFilter === 'recent') songs = songs.sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0)).slice(0, 12)
-  els.libraryList.innerHTML = songs.map((song) => '<button class="library-item ' + (song.id === current.id ? 'active' : '') + '" data-song-id="' + song.id + '"><span class="library-icon">' + (song.favorite ? '★' : '🎼') + '</span><span class="library-copy"><strong>' + escapeHtml(song.title) + '</strong><small>' + song.pages.length + ' 个谱页 · ' + new Date(song.lastOpenedAt || song.updatedAt).toLocaleDateString('zh-CN') + '</small></span><span class="library-arrow">›</span></button>').join('') || '<div class="library-empty">没有找到曲目</div>'
+  els.libraryList.innerHTML = songs.map((song) => '<button class="library-item ' + (song.id === current.id ? 'active' : '') + '" data-song-id="' + song.id + '"><span class="library-thumb" data-song-thumb="' + song.id + '"><span>' + (song.favorite ? '★' : '🎼') + '</span></span><span class="library-copy"><strong>' + escapeHtml(song.title) + '</strong><small>' + song.pages.length + ' 个谱页 · ' + new Date(song.lastOpenedAt || song.updatedAt).toLocaleDateString('zh-CN') + '</small></span><span class="library-arrow">›</span></button>').join('') || '<div class="library-empty">没有找到曲目</div>'
   els.libraryList.querySelectorAll('[data-song-id]').forEach((button) => button.addEventListener('click', async () => { const song = state.songs.find((item) => item.id === button.dataset.songId); if (!song) return; setSong(song); closeLibrary(); await renderSong(song) }))
-  els.pageManager.innerHTML = '<div class="page-manager-head"><strong>《' + escapeHtml(current.title) + '》的谱页</strong><span>' + current.pages.length + ' 页 <button data-favorite-song aria-label="收藏当前曲目">' + (current.favorite ? '★' : '☆') + '</button></span></div>' + current.pages.map((page, index) => '<div class="page-manager-item" data-page-jump="' + page.id + '"><span class="page-manager-index">' + (index + 1) + '</span><span class="page-manager-name">' + escapeHtml(page.name || page.type.toUpperCase()) + '</span><button data-page-up="' + page.id + '" aria-label="上移谱页">↑</button><button data-page-down="' + page.id + '" aria-label="下移谱页">↓</button><button data-page-remove="' + page.id + '" aria-label="删除谱页">×</button></div>').join('')
+  els.pageManager.innerHTML = '<div class="page-manager-head"><strong>《' + escapeHtml(current.title) + '》的谱页</strong><span>' + current.pages.length + ' 页 <button data-favorite-song aria-label="收藏当前曲目">' + (current.favorite ? '★' : '☆') + '</button></span></div>' + current.pages.map((page, index) => '<div class="page-manager-item" data-page-jump="' + page.id + '"><span class="page-thumb" data-page-thumb="' + page.id + '"></span><span class="page-manager-index">' + (index + 1) + '</span><span class="page-manager-name">' + escapeHtml(page.name || page.type.toUpperCase()) + '</span><button data-page-up="' + page.id + '" aria-label="上移谱页">↑</button><button data-page-down="' + page.id + '" aria-label="下移谱页">↓</button><button data-page-remove="' + page.id + '" aria-label="删除谱页">×</button></div>').join('')
   els.pageManager.querySelectorAll('[data-page-up]').forEach((button) => button.addEventListener('click', () => movePage(button.dataset.pageUp, -1)))
   els.pageManager.querySelectorAll('[data-page-down]').forEach((button) => button.addEventListener('click', () => movePage(button.dataset.pageDown, 1)))
   els.pageManager.querySelectorAll('[data-page-remove]').forEach((button) => button.addEventListener('click', () => removePage(button.dataset.pageRemove)))
@@ -273,6 +276,13 @@ function renderLibrary() {
   els.pageManager.querySelector('[data-favorite-song]')?.addEventListener('click', () => { current.favorite = !current.favorite; saveSongs(); renderLibrary() })
   els.library.querySelectorAll('[data-library-filter]').forEach((button) => button.classList.toggle('active', button.dataset.libraryFilter === state.libraryFilter))
   renderTrash()
+  hydrateThumbnails(songs, current)
+}
+async function hydrateThumbnails(songs, current) {
+  const thumbPages = []
+  for (const song of songs) { const page = song.pages.find((entry) => entry.type === 'image' && entry.blobId); if (page) thumbPages.push({ target: els.libraryList.querySelector('[data-song-thumb="' + song.id + '"]'), page }) }
+  for (const { target, page } of thumbPages) { if (!target) continue; const blob = await readBlob(page.blobId); if (!blob) continue; const url = URL.createObjectURL(blob); state.thumbnailUrls.push(url); target.style.backgroundImage = 'url("' + url + '")'; target.classList.add('has-image') }
+  for (const page of current.pages.filter((entry) => entry.type === 'image' && entry.blobId)) { const target = els.pageManager.querySelector('[data-page-thumb="' + page.id + '"]'); if (!target) continue; const blob = await readBlob(page.blobId); if (!blob) continue; const url = URL.createObjectURL(blob); state.thumbnailUrls.push(url); target.style.backgroundImage = 'url("' + url + '")'; target.classList.add('has-image') }
 }
 function movePage(pageId, delta) { const song = currentSong(); const index = song.pages.findIndex((page) => page.id === pageId); const next = index + delta; if (index < 0 || next < 0 || next >= song.pages.length) return; [song.pages[index], song.pages[next]] = [song.pages[next], song.pages[index]]; song.updatedAt = Date.now(); saveSongs(); renderLibrary(); renderSong(song) }
 function removePage(pageId) { const song = currentSong(); if (song.pages.length <= 1) return setStatus('至少保留一页谱面', true); const index = song.pages.findIndex((item) => item.id === pageId); const page = song.pages[index]; if (!page || !window.confirm('移到最近删除？')) return; song.pages.splice(index, 1); state.trash.unshift({ id: uid('trash'), kind: 'page', songId: song.id, page, index, deletedAt: Date.now() }); song.updatedAt = Date.now(); saveSongs(); renderLibrary(); renderSong(song); setStatus('谱页已移到最近删除') }
