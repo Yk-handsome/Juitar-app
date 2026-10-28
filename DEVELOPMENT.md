@@ -132,7 +132,7 @@ file:// 模式会受到浏览器安全策略限制，alphaTab worker 不能可�
 | Guitar Pro | .gp3、.gp4、.gp5、.gpx | alphaTab 真谱 |
 | MusicXML | .xml、.musicxml | alphaTab 真谱 |
 
-图片谱不能自动得到小节结构；需要播放、调速和小节锚点时使用 GP 或 MusicXML。
+图片谱不能自动得到小节结构；需要播放、调速和阅读位置时使用 GP 或 MusicXML。
 
 Android 文件选择器由 MainActivity.java 的 onShowFileChooser 提供：
 
@@ -164,7 +164,7 @@ adb logcat -s JuitarWeb
 3. 点击谱夹里的“＋ 新建曲子”，输入曲名即可创建一份内置 AlphaTex 六线谱模板；创建后立即打开并保存到谱夹。
 4. 导入的文件会写入 IndexedDB，文件名称和类型同步保存在 localStorage 的谱夹列表中。
 5. 点击右下角 📝 打开当前曲目的底部笔记抽屉，输入内容后自动保存。
-6. 在笔记中写入 `[m:12]`，点击“跳到笔记中的小节”即可回到第 12 小节。
+6. 点击右下角 📝 打开当前曲目的底部笔记抽屉，输入内容后自动保存。阅读位置由 APP 自动记忆。
 7. 只有 AlphaTex、GP 和 MusicXML 显示播放/BPM 悬浮药丸；图片和 PDF 不显示播放控件。
 
 ## 8. 测试和构建
@@ -286,4 +286,3 @@ git push origin v0.0.x
 ### 手机文字挤压
 
 确认运行的是原生单页入口，不是旧 Vue 分屏构建；重新执行 npm run build 或重新安装 APK。
-
