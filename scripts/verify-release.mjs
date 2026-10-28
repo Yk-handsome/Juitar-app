@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = process.cwd()
@@ -9,12 +9,13 @@ const required = [
   'dist/src/app.js',
   'dist/assets/alphaTab.worker.mjs',
   'dist/assets/alphaTab.worklet.mjs',
-  'dist/assets/pdf.worker.min-yatZIOMy.mjs',
   'dist/fflate/fflate.js',
   'release-apk/Juitar-v' + version + '-arm64.apk',
 ]
 
 const missing = required.filter((path) => !existsSync(join(root, path)))
+const assetNames = readdirSync(join(root, 'dist/assets'))
+if (!assetNames.some((name) => /^pdf\.worker\.min-.*\.mjs$/.test(name))) missing.push('dist/assets/pdf.worker.min-*.mjs')
 if (missing.length) {
   console.error('发布验收失败，缺少文件：')
   missing.forEach((path) => console.error(' - ' + path))
