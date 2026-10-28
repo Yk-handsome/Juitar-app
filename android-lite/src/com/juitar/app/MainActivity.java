@@ -88,7 +88,11 @@ public final class MainActivity extends Activity {
     }
     private void prepareIncomingFile(Intent intent) {
         Uri uri = intent == null ? null : intent.getData();
-        if (uri == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
+        if (intent != null && Intent.ACTION_SEND.equals(intent.getAction())) {
+            if (intent.getClipData() != null && intent.getClipData().getItemCount() > 0) uri = intent.getClipData().getItemAt(0).getUri();
+            if (uri == null) uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        }
+        if (uri == null || !(Intent.ACTION_VIEW.equals(intent.getAction()) || Intent.ACTION_SEND.equals(intent.getAction()))) return;
         try {
             InputStream input = getContentResolver().openInputStream(uri);
             if (input == null) return;
