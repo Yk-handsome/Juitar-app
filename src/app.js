@@ -27,7 +27,7 @@ const uid = (prefix) => prefix + '-' + Date.now().toString(36) + '-' + Math.rand
 const stripExt = (name) => String(name).replace(/\.[^.]+$/, '')
 const oldLibrary = JSON.parse(localStorage.getItem('juitar:library:v2') || '[]')
 const defaultSong = () => ({ id: 'song-default', title: DEFAULT_TITLE, note: '', lastPageId: 'page-default', lastScrollTop: 0, createdAt: Date.now(), updatedAt: Date.now(), pages: [{ id: 'page-default', type: 'alphatex', name: '默认六线谱', text: DEFAULT_TEX }] })
-const normalizeSongs = (songs) => songs.map((song) => ({ ...song, favorite: Boolean(song.favorite), lastOpenedAt: Number(song.lastOpenedAt) || Number(song.updatedAt) || Date.now(), lastPageId: song.lastPageId || null, lastScrollTop: Number(song.lastScrollTop) || 0, pages: (song.pages || []).map((page) => page.text ? { ...page, text: page.text.replace(/\\n/g, '\n') } : page) }))
+const normalizeSongs = (songs) => songs.map((song) => ({ ...song, favorite: Boolean(song.favorite), imageScale: Math.max(1, Math.min(3.5, Number(song.imageScale) || 1)), lastOpenedAt: Number(song.lastOpenedAt) || Number(song.updatedAt) || Date.now(), lastPageId: song.lastPageId || null, lastScrollTop: Number(song.lastScrollTop) || 0, pages: (song.pages || []).map((page) => page.text ? { ...page, text: page.text.replace(/\\n/g, '\n') } : page) }))
 const migrateSongs = () => {
   const saved = JSON.parse(localStorage.getItem(SONGS_KEY) || 'null')
   if (Array.isArray(saved) && saved.length) return normalizeSongs(saved)
@@ -171,15 +171,17 @@ function goToPage(delta) {
 function jumpToPage(pageId) { const target = els.host.querySelector('[data-page-id="' + pageId + '"]'); if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); currentSong().lastPageId = pageId; saveSongs(); updateProgress() } }
 function enablePinchZoom(stage, image) {
   stage._pointers = {}
+  const song = currentSong(); let scale = Math.max(1, Math.min(3.5, Number(song.imageScale) || 1)); image.style.transform = 'scale(' + scale + ')'
   stage.addEventListener('pointerdown', (event) => { stage.setPointerCapture(event.pointerId); stage._pointers[event.pointerId] = event })
   stage.addEventListener('pointermove', (event) => {
     if (!stage._pointers[event.pointerId]) return
     stage._pointers[event.pointerId] = event; const points = Object.values(stage._pointers); if (points.length < 2) return
     const distance = Math.hypot(points[0].clientX - points[1].clientX, points[0].clientY - points[1].clientY)
-    if (!state.pinch.active) { state.pinch.active = true; state.pinch.distance = distance; state.pinch.scale = 1 }
-    image.style.transform = 'scale(' + Math.max(1, Math.min(3.5, state.pinch.scale * (distance / state.pinch.distance))) + ')'
+    if (!state.pinch.active) { state.pinch.active = true; state.pinch.distance = distance; state.pinch.scale = scale }
+    scale = Math.max(1, Math.min(3.5, state.pinch.scale * (distance / state.pinch.distance))); image.style.transform = 'scale(' + scale + ')'
+    state.pinch.distance = distance; state.pinch.scale = scale
   })
-  const clear = (event) => { delete stage._pointers[event.pointerId]; if (Object.keys(stage._pointers).length < 2) state.pinch.active = false }
+  const clear = (event) => { delete stage._pointers[event.pointerId]; if (Object.keys(stage._pointers).length < 2) { state.pinch.active = false; song.imageScale = scale; saveSongs() } }
   stage.addEventListener('pointerup', clear); stage.addEventListener('pointercancel', clear); stage.addEventListener('pointerleave', clear)
 }
 function appendImagePage(page, blob, index) {
