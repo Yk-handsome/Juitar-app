@@ -118,6 +118,11 @@ async function saveBlob(id, file) {
   const db = await openDb(); if (!db) return
   await new Promise((resolve) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put(file, id); tx.oncomplete = resolve; tx.onerror = resolve })
 }
+async function fileHash(file) {
+  if (!crypto?.subtle) return file.name + ':' + file.size
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
 async function readBlob(id) {
   const readFrom = async (name) => {
     const db = await openDb(name); if (!db) return null
@@ -152,6 +157,7 @@ function updateProgress() {
   clearTimeout(state.scrollSaveTimer)
   state.scrollSaveTimer = setTimeout(saveSongs, 350)
 }
+function jumpToPage(pageId) { const target = els.host.querySelector('[data-page-id="' + pageId + '"]'); if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); currentSong().lastPageId = pageId; saveSongs(); updateProgress() } }
 function enablePinchZoom(stage, image) {
   stage._pointers = {}
   stage.addEventListener('pointerdown', (event) => { stage.setPointerCapture(event.pointerId); stage._pointers[event.pointerId] = event })
@@ -231,15 +237,17 @@ async function createSongFromPendingFiles() {
   state.songs = [song, ...state.songs]; state.currentSongId = song.id; saveSongs(); closeImportPreview(); renderLibrary(); await addFilesToCurrentSong(files)
 }
 async function addFilesToCurrentSong(files) {
-  const song = currentSong(); const accepted = []
+  const song = currentSong(); const accepted = []; let duplicates = 0
   for (const file of files) {
     const type = fileKind(file); if (!type) continue
-    const page = { id: uid('page'), type, name: file.name, blobId: uid('blob') }
+    const hash = await fileHash(file)
+    if (song.pages.some((page) => page.hash && page.hash === hash)) { duplicates += 1; continue }
+    const page = { id: uid('page'), type, name: file.name, hash, blobId: uid('blob') }
     if (type === 'alphatex') page.text = await file.text()
     await saveBlob(page.blobId, file); accepted.push(page)
   }
-  if (!accepted.length) return setStatus('没有识别到支持的谱页格式', true)
-  song.pages.push(...accepted); song.updatedAt = Date.now(); saveSongs(); renderLibrary(); await renderSong(song); setStatus(accepted.length + ' 个谱页已添加到《' + song.title + '》')
+  if (!accepted.length) return setStatus(duplicates ? '这些谱页已经存在，未重复添加' : '没有识别到支持的谱页格式', true)
+  song.pages.push(...accepted); song.updatedAt = Date.now(); saveSongs(); renderLibrary(); await renderSong(song); setStatus(accepted.length + ' 个谱页已添加到《' + song.title + '》' + (duplicates ? '，跳过 ' + duplicates + ' 个重复文件' : ''))
 }
 function renderLibrary() {
   const current = currentSong()
@@ -249,10 +257,11 @@ function renderLibrary() {
   if (state.libraryFilter === 'recent') songs = songs.sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0)).slice(0, 12)
   els.libraryList.innerHTML = songs.map((song) => '<button class="library-item ' + (song.id === current.id ? 'active' : '') + '" data-song-id="' + song.id + '"><span class="library-icon">' + (song.favorite ? '★' : '🎼') + '</span><span class="library-copy"><strong>' + escapeHtml(song.title) + '</strong><small>' + song.pages.length + ' 个谱页 · ' + new Date(song.lastOpenedAt || song.updatedAt).toLocaleDateString('zh-CN') + '</small></span><span class="library-arrow">›</span></button>').join('') || '<div class="library-empty">没有找到曲目</div>'
   els.libraryList.querySelectorAll('[data-song-id]').forEach((button) => button.addEventListener('click', async () => { const song = state.songs.find((item) => item.id === button.dataset.songId); if (!song) return; setSong(song); closeLibrary(); await renderSong(song) }))
-  els.pageManager.innerHTML = '<div class="page-manager-head"><strong>《' + escapeHtml(current.title) + '》的谱页</strong><span>' + current.pages.length + ' 页 <button data-favorite-song aria-label="收藏当前曲目">' + (current.favorite ? '★' : '☆') + '</button></span></div>' + current.pages.map((page, index) => '<div class="page-manager-item"><span class="page-manager-index">' + (index + 1) + '</span><span class="page-manager-name">' + escapeHtml(page.name || page.type.toUpperCase()) + '</span><button data-page-up="' + page.id + '" aria-label="上移谱页">↑</button><button data-page-down="' + page.id + '" aria-label="下移谱页">↓</button><button data-page-remove="' + page.id + '" aria-label="删除谱页">×</button></div>').join('')
+  els.pageManager.innerHTML = '<div class="page-manager-head"><strong>《' + escapeHtml(current.title) + '》的谱页</strong><span>' + current.pages.length + ' 页 <button data-favorite-song aria-label="收藏当前曲目">' + (current.favorite ? '★' : '☆') + '</button></span></div>' + current.pages.map((page, index) => '<div class="page-manager-item" data-page-jump="' + page.id + '"><span class="page-manager-index">' + (index + 1) + '</span><span class="page-manager-name">' + escapeHtml(page.name || page.type.toUpperCase()) + '</span><button data-page-up="' + page.id + '" aria-label="上移谱页">↑</button><button data-page-down="' + page.id + '" aria-label="下移谱页">↓</button><button data-page-remove="' + page.id + '" aria-label="删除谱页">×</button></div>').join('')
   els.pageManager.querySelectorAll('[data-page-up]').forEach((button) => button.addEventListener('click', () => movePage(button.dataset.pageUp, -1)))
   els.pageManager.querySelectorAll('[data-page-down]').forEach((button) => button.addEventListener('click', () => movePage(button.dataset.pageDown, 1)))
   els.pageManager.querySelectorAll('[data-page-remove]').forEach((button) => button.addEventListener('click', () => removePage(button.dataset.pageRemove)))
+  els.pageManager.querySelectorAll('[data-page-jump]').forEach((item) => item.addEventListener('click', (event) => { if (!event.target.closest('button')) jumpToPage(item.dataset.pageJump) }))
   els.pageManager.querySelector('[data-favorite-song]')?.addEventListener('click', () => { current.favorite = !current.favorite; saveSongs(); renderLibrary() })
   els.library.querySelectorAll('[data-library-filter]').forEach((button) => button.classList.toggle('active', button.dataset.libraryFilter === state.libraryFilter))
   renderTrash()
