@@ -242,9 +242,9 @@ async function renderSong(song) {
   }
 }
 function openImportPreview(files) {
-  state.pendingFiles = files
-  els.importCount.textContent = String(files.length)
-  els.importFileList.innerHTML = files.map((file, index) => '<div class="import-file-row"><span>' + (index + 1) + '</span><strong>' + escapeHtml(file.name) + '</strong><small>' + Math.round(file.size / 1024) + ' KB</small></div>').join('')
+  state.pendingFiles = [...files].sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }))
+  els.importCount.textContent = String(state.pendingFiles.length)
+  els.importFileList.innerHTML = '<div class="import-sort-hint">已按文件名中的数字自动排序</div>' + state.pendingFiles.map((file, index) => '<div class="import-file-row"><span>' + (index + 1) + '</span><strong>' + escapeHtml(file.name) + '</strong><small>' + Math.round(file.size / 1024) + ' KB</small></div>').join('')
   els.importModal.hidden = false
 }
 function closeImportPreview() { els.importModal.hidden = true; state.pendingFiles = [] }
