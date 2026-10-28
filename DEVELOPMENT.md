@@ -121,14 +121,14 @@ http://127.0.0.1:5173/
 
 file:// 模式会受到浏览器安全策略限制，alphaTab worker 不能可靠运行。现在直接双击 HTML 不会再是纯空白，而是显示说明卡片。查看真实六线谱请运行 npm run dev 或使用 APK。
 
-## 5. 导入谱子
+## 5. 导入谱页
 
-点击顶部“＋ 导入谱子”。
+点击顶部“＋ 添加谱页”。
 
 | 类型 | 扩展名 | 行为 |
 |---|---|---|
 | 图片谱 | .png、.jpg、.jpeg | 全宽显示、滚动和缩放 |
-| PDF 谱 | .pdf | 全宽 PDF 视口 |
+| PDF 谱 | .pdf | 本地 PDF.js 多页 canvas |
 | Guitar Pro | .gp3、.gp4、.gp5、.gpx | alphaTab 真谱 |
 | MusicXML | .xml、.musicxml | alphaTab 真谱 |
 
@@ -159,7 +159,7 @@ adb logcat -s JuitarWeb
 
 ## 7. 谱夹、笔记和播放
 
-1. 点击右上角“＋ 导入谱子”，选择图片、PDF、GP3/GP4/GP5、GPX 或 MusicXML。
+1. 点击右上角“＋ 添加谱页”，选择图片、PDF、GP3/GP4/GP5、GPX 或 MusicXML。
 2. 图片和 PDF 直接全宽展示；GP/MusicXML 通过 alphaTab 渲染真实六线谱。
 3. 点击谱夹里的“＋ 新建曲子”，输入曲名即可创建一份内置 AlphaTex 六线谱模板；创建后立即打开并保存到谱夹。
 4. 导入的文件会写入 IndexedDB，文件名称和类型同步保存在 localStorage 的谱夹列表中。
@@ -286,4 +286,3 @@ git push origin v0.0.x
 ### 手机文字挤压
 
 确认运行的是原生单页入口，不是旧 Vue 分屏构建；重新执行 npm run build 或重新安装 APK。
-

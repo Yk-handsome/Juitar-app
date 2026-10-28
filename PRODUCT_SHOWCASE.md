@@ -30,7 +30,7 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 
 ### 谱夹抽屉
 
-![移动曲库抽屉](docs/screenshots/mobile-library-drawer.png)
+![移动谱夹](docs/screenshots/mobile-library-drawer.png)
 
 谱夹入口全屏显示曲目列表；进入曲目后可查看谱页数量、调整顺序并删除谱页，文件正文存入 IndexedDB。
 
@@ -71,7 +71,7 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 - `npm run build`：Vue 类型检查与 Vite 生产构建通过。
 - 本地浏览器真实渲染截图：桌面 1440×900、竖屏 393×873、横屏 873×393。
 - 锚点状态截图：`?showcase=anchor` 进入 8–12 循环状态。
-- 曲库状态截图：`?showcase=library` 展开移动曲库抽屉。
+- 曲库状态截图：`?showcase=library` 展开移动谱夹。
 - 笔记状态截图：`?showcase=notes` 进入移动笔记面板。
 - Android 模拟器：APK 安装成功，启动焦点为 `com.juitar.app/.MainActivity`，竖屏截图已保存。
 
@@ -83,7 +83,7 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 
 | 版本 | Commit | 摘要 |
 |---|---|---|
-| v0.0.1 | `d4aab2f` | 统一版本基线；建立深色设计系统；加入响应式工作台、移动 Touch Bar、曲库抽屉和截图验收资产。 |
+| v0.0.1 | `d4aab2f` | 统一版本基线；建立深色设计系统；加入响应式工作台、移动 Touch Bar、谱夹和截图验收资产。 |
 | v0.0.2 | `933babc` | 增加 70% / 80% / 100% 练习速度预设；锚点验收进入真实 笔记编辑；补齐多首 MusicXML 实战夹具。 |
 | v0.0.3 | `68be082` | 补齐曲面屏安全边距、触控目标和移动端触摸行为。 |
 | v0.0.4 | `37b9443` | 让谱面字体、音色和演示曲谱使用 Vite base URL，兼容 Android asset 离线加载。 |
@@ -119,7 +119,7 @@ Android APK：`release-apk/Juitar-v0.2.0-arm64.apk`。该产物是无原生 ABI 
 
 ![原生单页笔记视图](docs/screenshots/native-rebuild/cua-notes.png)
 
-![原生单页曲库抽屉](docs/screenshots/native-rebuild/cua-library.png)
+![原生单页谱夹](docs/screenshots/native-rebuild/cua-library.png)
 
 手机实机验收：
 
@@ -128,4 +128,3 @@ Android APK：`release-apk/Juitar-v0.2.0-arm64.apk`。该产物是无原生 ABI 
 ![手机系统文件选择器](docs/screenshots/phone-debug/file-picker-fixed.png)
 
 ![手机图片谱导入](docs/screenshots/phone-debug/image-imported.png)
-
