@@ -1,6 +1,6 @@
 # Juitar 产品视觉与功能验收手册
 
-> 当前基线：`v0.2.0` · 原生 HTML + CSS + JavaScript + alphaTab
+> 当前基线：`v0.2.1` · 原生 HTML + CSS + JavaScript + alphaTab
 
 ## 1. 产品设计美学
 
@@ -91,7 +91,7 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 | v0.0.6 | `70426e9` | 固定 Vitest 单 worker 回归配置；完成最终 Android APK 与交付文档。 |
 | v0.0.7 | `af8ec29` | 推倒旧分屏，改为原生单页全宽看谱 / 笔记；默认 AlphaTex 真六线谱和图片/PDF/GP/MusicXML 导入。 |
 | v0.0.8 | `5f6b5d1` | 修复 Android WebView 文件选择器、手机缩放和直接打开 HTML 的空白问题。 |
-| v0.2.0 | 当前工作树 | 重做为极简全屏手机谱夹：移除打卡统计和分屏，增加 IndexedDB 谱夹、底部笔记抽屉与矢量谱悬浮播放器。 |
+| v0.2.1 | 当前工作树 | 重做为极简全屏手机谱夹：移除打卡统计和分屏，增加 IndexedDB 谱夹、底部笔记抽屉与矢量谱悬浮播放器。 |
 
 ## 6. 交付路径
 
@@ -101,9 +101,9 @@ Juitar 的移动端主界面以纸面谱为中心：顶部只保留 40px 半透�
 - 视觉样式：[src/style.css](src/style.css)
 - 构建记录：[BUILD_LOG.md](BUILD_LOG.md)
 
-Android APK：`release-apk/Juitar-v0.2.0-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器。
+Android APK：`release-apk/Juitar-v0.2.1-arm64.apk`。该产物是无原生 ABI 的 Java/WebView 包装，兼容 ARM64 目标手机和 x86_64 Android 模拟器。
 
-## 7. 极简全屏谱夹验收（v0.2.0）
+## 7. 极简全屏谱夹验收（v0.2.1）
 
 本轮已移除运行时 Vue 分屏和数字矩阵，入口改为 `index.html + src/app.js + src/style.css`：
 
@@ -128,3 +128,4 @@ Android APK：`release-apk/Juitar-v0.2.0-arm64.apk`。该产物是无原生 ABI 
 ![手机系统文件选择器](docs/screenshots/phone-debug/file-picker-fixed.png)
 
 ![手机图片谱导入](docs/screenshots/phone-debug/image-imported.png)
+

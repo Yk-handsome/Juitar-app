@@ -167,7 +167,7 @@ npm run verify:all
 - Git 已提交并推送。
 - APK 必须由当前工作树重新构建后再安装验证。
 
-## v0.2.0 实际验收记录
+## v0.2.1 实际验收记录
 
 执行日期：2026-10-29。
 
@@ -178,7 +178,7 @@ npm run verify:all
 - npm run verify:release：发布资源完整。
 - npm run verify:android -- -Serial emulator-5554：Android smoke 通过。
 - versionCode=20。
-- versionName=0.2.0。
+- versionName=0.2.1。
 
 模拟器已确认：
 
@@ -211,4 +211,5 @@ npm run verify:all
 ## 每轮工作顺序
 
 修改代码 → 固定视口验证 → 单元测试 → 生产构建 → APK 构建 → 模拟器或真机验证 → 更新本文件 → 提交并推送。
+
 

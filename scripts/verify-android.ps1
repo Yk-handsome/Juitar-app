@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $adb = Get-ChildItem -Path "$env:LOCALAPPDATA\Android\Sdk" -Filter adb.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
 if ([string]::IsNullOrWhiteSpace($adb)) { throw 'ADB_NOT_FOUND' }
-if ([string]::IsNullOrWhiteSpace($Apk)) { $Apk = "release-apk/Juitar-v0.2.0-arm64.apk" }
+if ([string]::IsNullOrWhiteSpace($Apk)) { $Apk = "release-apk/Juitar-v0.2.1-arm64.apk" }
 if (!(Test-Path $Apk)) { throw "APK_NOT_FOUND: $Apk" }
 $target = if ($Serial) { @('-s', $Serial) } else { @() }
 $devices = & $adb @target devices
@@ -35,4 +35,5 @@ $view | Select-String 'com.juitar.app/.MainActivity' | Out-Host
 $send | Select-String 'com.juitar.app/.MainActivity' | Out-Host
 $version | Out-Host
 $logs | Select-Object -Last 20 | Out-Host
+
 

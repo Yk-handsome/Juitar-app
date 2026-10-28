@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.juitar.app">
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <application android:theme="@style/AppTheme" android:label="Juitar" android:versionCode="20" android:versionName="0.2.0" android:allowBackup="false" android:supportsRtl="true">
+    <application android:theme="@style/AppTheme" android:label="Juitar" android:versionCode="21" android:versionName="0.2.1" android:allowBackup="false" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:launchMode="singleTop" android:screenOrientation="unspecified" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,3 +36,4 @@
         </activity>
     </application>
 </manifest>
+

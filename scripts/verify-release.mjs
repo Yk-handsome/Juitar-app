@@ -32,3 +32,4 @@ for (const marker of ['./alphatab/alphaTab.min.js', './fflate/fflate.js', './src
 
 console.log('Juitar v' + version + ' release assets verified')
 required.forEach((path) => console.log('✓ ' + path))
+
