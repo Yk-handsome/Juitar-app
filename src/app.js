@@ -217,6 +217,12 @@ function createAlphaTabApi(host, kind, token) {
   api.renderFinished.on(() => { if (token !== state.renderToken) return; state.hasVector = true; state.ready = true; els.player.hidden = false; setStatus('真实谱面已渲染 · ' + currentSong().pages.length + ' 个谱页') })
   api.error.on((error) => { if (token === state.renderToken) setStatus('谱面错误：' + (error.message || error), true) })
   api.playerStateChanged.on((event) => { if (token !== state.renderToken) return; state.playing = event.state === alphaTab.synth.PlayerState.Playing; els.play.classList.toggle('playing', state.playing); els.play.querySelector('span').textContent = state.playing ? 'Ⅱ' : '▶' })
+  api.playerPositionChanged.on((event) => {
+    if (token !== state.renderToken || !state.playing || !api.score?.masterBars?.length) return
+    const total = api.score.masterBars.length; const index = Math.max(0, Math.min(total - 1, Math.floor((event.currentTick / Math.max(event.endTick, 1)) * total)))
+    const target = host.querySelector('[data-bar-index="' + index + '"]')
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
   return api
 }
 async function appendVectorPage(page, blob, index, token) {
