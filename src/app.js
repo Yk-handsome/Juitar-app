@@ -63,6 +63,7 @@ const state = {
   libraryQuery: '',
   libraryFilter: 'all',
   songModalMode: 'create',
+  renamePageId: null,
   wakeLock: null,
   keepAwake: false,
   immersive: false,
@@ -305,10 +306,11 @@ function renderLibrary() {
   if (state.libraryFilter === 'recent') songs = songs.sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0)).slice(0, 12)
   els.libraryList.innerHTML = songs.map((song) => '<button class="library-item ' + (song.id === current.id ? 'active' : '') + '" data-song-id="' + song.id + '"><span class="library-thumb" data-song-thumb="' + song.id + '"><span>' + (song.favorite ? '★' : '🎼') + '</span></span><span class="library-copy"><strong>' + escapeHtml(song.title) + '</strong><small>' + song.pages.length + ' 个谱页 · ' + new Date(song.lastOpenedAt || song.updatedAt).toLocaleDateString('zh-CN') + '</small></span><span class="library-arrow">›</span></button>').join('') || '<div class="library-empty">没有找到曲目</div>'
   els.libraryList.querySelectorAll('[data-song-id]').forEach((button) => button.addEventListener('click', async () => { const song = state.songs.find((item) => item.id === button.dataset.songId); if (!song) return; setSong(song); closeLibrary(); await renderSong(song) }))
-  els.pageManager.innerHTML = '<div class="page-manager-head"><strong>《' + escapeHtml(current.title) + '》的谱页</strong><span>' + current.pages.length + ' 页 <button data-favorite-song aria-label="收藏当前曲目">' + (current.favorite ? '★' : '☆') + '</button></span></div>' + current.pages.map((page, index) => '<div class="page-manager-item" data-page-jump="' + page.id + '"><span class="page-thumb" data-page-thumb="' + page.id + '"></span><span class="page-manager-index">' + (index + 1) + '</span><span class="page-manager-name">' + escapeHtml(page.name || page.type.toUpperCase()) + '</span><button data-page-up="' + page.id + '" aria-label="上移谱页">↑</button><button data-page-down="' + page.id + '" aria-label="下移谱页">↓</button><button data-page-remove="' + page.id + '" aria-label="删除谱页">×</button></div>').join('')
+  els.pageManager.innerHTML = '<div class="page-manager-head"><strong>《' + escapeHtml(current.title) + '》的谱页</strong><span>' + current.pages.length + ' 页 <button data-favorite-song aria-label="收藏当前曲目">' + (current.favorite ? '★' : '☆') + '</button></span></div>' + current.pages.map((page, index) => '<div class="page-manager-item" data-page-jump="' + page.id + '"><span class="page-thumb" data-page-thumb="' + page.id + '"></span><span class="page-manager-index">' + (index + 1) + '</span><span class="page-manager-name">' + escapeHtml(page.name || page.type.toUpperCase()) + '</span><button data-page-rename="' + page.id + '" aria-label="重命名谱页">✎</button><button data-page-up="' + page.id + '" aria-label="上移谱页">↑</button><button data-page-down="' + page.id + '" aria-label="下移谱页">↓</button><button data-page-remove="' + page.id + '" aria-label="删除谱页">×</button></div>').join('')
   els.pageManager.querySelectorAll('[data-page-up]').forEach((button) => button.addEventListener('click', () => movePage(button.dataset.pageUp, -1)))
   els.pageManager.querySelectorAll('[data-page-down]').forEach((button) => button.addEventListener('click', () => movePage(button.dataset.pageDown, 1)))
   els.pageManager.querySelectorAll('[data-page-remove]').forEach((button) => button.addEventListener('click', () => removePage(button.dataset.pageRemove)))
+  els.pageManager.querySelectorAll('[data-page-rename]').forEach((button) => button.addEventListener('click', (event) => { event.stopPropagation(); openRenamePage(button.dataset.pageRename) }))
   els.pageManager.querySelectorAll('[data-page-jump]').forEach((item) => item.addEventListener('click', (event) => { if (!event.target.closest('button')) jumpToPage(item.dataset.pageJump) }))
   els.pageManager.querySelector('[data-favorite-song]')?.addEventListener('click', () => { current.favorite = !current.favorite; saveSongs(); renderLibrary() })
   els.library.querySelectorAll('[data-library-filter]').forEach((button) => button.classList.toggle('active', button.dataset.libraryFilter === state.libraryFilter))
@@ -342,6 +344,7 @@ function restoreTrash(id) {
   state.trash = state.trash.filter((entry) => entry.id !== id); saveSongs(); renderLibrary(); renderTrash(); renderSong(currentSong()); setStatus('已恢复')
 }
 function openRenameSong() { const song = currentSong(); state.songModalMode = 'rename'; els.songModalTitle.textContent = '重命名曲目'; els.songModalHint.textContent = '只修改曲目名称，谱页和笔记会保留。'; els.newSongName.value = song.title; els.newSongModal.hidden = false; requestAnimationFrame(() => { els.newSongName.focus(); els.newSongName.select() }) }
+function openRenamePage(pageId) { const page = currentSong().pages.find((item) => item.id === pageId); if (!page) return; state.songModalMode = 'rename-page'; state.renamePageId = pageId; els.songModalTitle.textContent = '重命名谱页'; els.songModalHint.textContent = '给这张谱页起一个容易记住的名字。'; els.newSongName.value = page.name || ''; els.newSongModal.hidden = false; requestAnimationFrame(() => { els.newSongName.focus(); els.newSongName.select() }) }
 function setImmersive(enabled) { state.immersive = enabled; document.documentElement.classList.toggle('immersive-mode', enabled); els.immersive.textContent = enabled ? '退出沉浸模式' : '沉浸模式' }
 async function toggleWakeLock() {
   if (state.wakeLock || state.keepAwake) { if (state.wakeLock) await state.wakeLock.release(); state.wakeLock = null; state.keepAwake = false; window.JuitarAndroid?.setKeepScreenOn(false); els.wakeLock.textContent = '保持屏幕常亮'; setStatus('已关闭屏幕常亮'); return }
@@ -394,6 +397,7 @@ window.handleAndroidBack = () => {
 }
 async function createNewSong() {
   const title = els.newSongName.value.trim() || '我的新曲子'
+  if (state.songModalMode === 'rename-page') { const page = currentSong().pages.find((item) => item.id === state.renamePageId); if (page) page.name = title; currentSong().updatedAt = Date.now(); saveSongs(); closeNewSong(); renderLibrary(); setStatus('谱页已重命名'); state.songModalMode = 'create'; state.renamePageId = null; return }
   if (state.songModalMode === 'rename') { const song = currentSong(); song.title = title; song.updatedAt = Date.now(); saveSongs(); setTitle(title); closeNewSong(); renderLibrary(); setStatus('曲目已重命名'); state.songModalMode = 'create'; return }
   const text = DEFAULT_TEX.replace("\\title 'Californian Evening'", "\\title '" + title.replace(/'/g, "\\'") + "'")
   const page = { id: uid('page'), type: 'alphatex', name: '默认六线谱', blobId: uid('blob'), text }
