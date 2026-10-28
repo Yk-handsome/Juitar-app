@@ -26,3 +26,4 @@ src-tauri/target
 android-lite/build/
 release-apk/*.idsig
 android-lite/keystore/
+docs/screenshots/android-smoke.png

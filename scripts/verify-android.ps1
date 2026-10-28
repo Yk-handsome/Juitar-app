@@ -1,6 +1,7 @@
 param(
   [string]$Serial = "",
-  [string]$Apk = ""
+  [string]$Apk = "",
+  [string]$Screenshot = "docs/screenshots/android-smoke.png"
 )
 $ErrorActionPreference = 'Stop'
 $adb = Get-ChildItem -Path "$env:LOCALAPPDATA\Android\Sdk" -Filter adb.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
@@ -35,5 +36,8 @@ $view | Select-String 'com.juitar.app/.MainActivity' | Out-Host
 $send | Select-String 'com.juitar.app/.MainActivity' | Out-Host
 $version | Out-Host
 $logs | Select-Object -Last 20 | Out-Host
+New-Item -ItemType Directory -Force (Split-Path $Screenshot -Parent) | Out-Null
+& $adb @target exec-out screencap -p > $Screenshot
+Write-Output "Screenshot: $Screenshot"
 
 
