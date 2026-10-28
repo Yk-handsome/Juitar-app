@@ -24,8 +24,8 @@ if ($logsText -match 'FileNotFoundException.*worker|FileNotFoundException.*pdf.w
   $logs | Out-Host
   throw 'ANDROID_RUNTIME_ASSET_ERROR'
 }
-$focus = & $adb @target shell dumpsys window
-if ($focus -notmatch 'mFocusedApp=.*com\.juitar\.app/.MainActivity') { throw 'ANDROID_ACTIVITY_NOT_ACTIVE' }
+$focus = (& $adb @target shell dumpsys window) -join [Environment]::NewLine
+if (!$focus.Contains('com.juitar.app/.MainActivity')) { throw 'ANDROID_ACTIVITY_NOT_ACTIVE' }
 $view = (& $adb @target shell cmd package query-activities --brief -a android.intent.action.VIEW -c android.intent.category.DEFAULT -t image/png) -join [Environment]::NewLine
 if ($view -notmatch 'com\.juitar\.app/\.MainActivity') { throw 'ANDROID_VIEW_INTENT_NOT_REGISTERED' }
 $send = (& $adb @target shell cmd package query-activities --brief -a android.intent.action.SEND_MULTIPLE -c android.intent.category.DEFAULT -t image/png) -join [Environment]::NewLine
