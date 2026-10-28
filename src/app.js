@@ -334,6 +334,13 @@ function openNotes() { closeLibrary(); els.noteDrawer.classList.add('open'); els
 function closeNotes() { els.noteDrawer.classList.remove('open'); els.noteDrawer.setAttribute('aria-hidden', 'true'); if (!els.library.classList.contains('open')) els.scrim.hidden = true }
 function openNewSong() { closeLibrary(); state.songModalMode = 'create'; els.songModalTitle.textContent = '新建曲子'; els.songModalHint.textContent = '新曲目会先带一份可直接查看的六线谱模板，之后可以继续添加多张谱页。'; els.newSongModal.hidden = false; els.newSongName.value = ''; requestAnimationFrame(() => els.newSongName.focus()) }
 function closeNewSong() { els.newSongModal.hidden = true }
+window.handleAndroidBack = () => {
+  if (!els.importModal.hidden) { closeImportPreview(); return true }
+  if (!els.newSongModal.hidden) { closeNewSong(); return true }
+  if (els.noteDrawer.classList.contains('open')) { closeNotes(); return true }
+  if (els.library.classList.contains('open')) { closeLibrary(); return true }
+  return false
+}
 async function createNewSong() {
   const title = els.newSongName.value.trim() || '我的新曲子'
   if (state.songModalMode === 'rename') { const song = currentSong(); song.title = title; song.updatedAt = Date.now(); saveSongs(); setTitle(title); closeNewSong(); renderLibrary(); setStatus('曲目已重命名'); state.songModalMode = 'create'; return }
