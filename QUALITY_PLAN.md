@@ -165,6 +165,38 @@ powershell -ExecutionPolicy Bypass -File android-lite/build.ps1
 - 工作区干净。
 - Git 已提交并推送。
 
+## v0.2.0 实际验收记录
+
+执行日期：2026-10-29。
+
+测试结果：
+
+- npm run test：3 个测试文件、8 个测试通过。
+- npm run build：Vite 生产构建通过。
+- npm run verify:release：发布资源完整。
+- npm run verify:android -- -Serial emulator-5554：Android smoke 通过。
+- versionCode=20。
+- versionName=0.2.0。
+
+模拟器已确认：
+
+- APK 增量安装成功。
+- Juitar Activity 启动。
+- alphaTab worker 和 worklet 存在。
+- PDF worker 存在。
+- 图片 VIEW 入口注册。
+- 多文件 SEND_MULTIPLE 入口注册。
+- WebView 页面无资源错误。
+
+真实手机专项仍需要设备在线后执行：
+
+- 覆盖安装。
+- 文件管理器直接打开图片、PDF、GP。
+- 微信或文件管理器多文件分享。
+- 屏幕常亮。
+- Android 返回键层级关闭。
+- 横屏翻页。
+
 ## 当前风险
 
 - 真机不持续连接：真机连接后优先验证文件关联、分享和覆盖升级。
