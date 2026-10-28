@@ -27,10 +27,10 @@ if ($logs -notmatch 'page=https://appassets.androidplatform.net/assets/dist/inde
   $logs | Out-Host
   throw 'ANDROID_PAGE_NOT_CONFIRMED'
 }
-$view = & $adb @target shell cmd package query-activities --brief -a android.intent.action.VIEW -c android.intent.category.DEFAULT -t image/png
-if ($view -notmatch 'com.juitar.app/.MainActivity') { throw 'ANDROID_VIEW_INTENT_NOT_REGISTERED' }
-$send = & $adb @target shell cmd package query-activities --brief -a android.intent.action.SEND_MULTIPLE -c android.intent.category.DEFAULT -t image/png
-if ($send -notmatch 'com.juitar.app/.MainActivity') { throw 'ANDROID_SEND_MULTIPLE_INTENT_NOT_REGISTERED' }
+$view = (& $adb @target shell cmd package query-activities --brief -a android.intent.action.VIEW -c android.intent.category.DEFAULT -t image/png) -join [Environment]::NewLine
+if ($view -notmatch 'com\.juitar\.app/\.MainActivity') { throw 'ANDROID_VIEW_INTENT_NOT_REGISTERED' }
+$send = (& $adb @target shell cmd package query-activities --brief -a android.intent.action.SEND_MULTIPLE -c android.intent.category.DEFAULT -t image/png) -join [Environment]::NewLine
+if ($send -notmatch 'com\.juitar\.app/\.MainActivity') { throw 'ANDROID_SEND_MULTIPLE_INTENT_NOT_REGISTERED' }
 Write-Output 'Android smoke verification passed'
 $view | Select-String 'com.juitar.app/.MainActivity' | Out-Host
 $send | Select-String 'com.juitar.app/.MainActivity' | Out-Host
