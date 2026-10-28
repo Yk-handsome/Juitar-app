@@ -11,6 +11,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.ValueCallback;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient.FileChooserParams;
 import android.content.Intent;
 import android.net.Uri;
@@ -27,6 +28,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import android.util.Base64;
+import android.database.Cursor;
+import android.provider.OpenableColumns;
 
 public final class MainActivity extends Activity {
     private WebView webView;
@@ -34,6 +38,9 @@ public final class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 7107;
     private ServerSocket server;
     private Thread serverThread;
+    private byte[] incomingBytes;
+    private String incomingName = "imported-score";
+    private String incomingMime = "application/octet-stream";
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         WebView.setWebContentsDebuggingEnabled(true);
@@ -49,7 +56,7 @@ public final class MainActivity extends Activity {
                 }
                 return super.shouldInterceptRequest(view, request);
             }
-            @Override public void onPageFinished(WebView view, String url) { Log.i("JuitarWeb", "page=" + url); }
+            @Override public void onPageFinished(WebView view, String url) { Log.i("JuitarWeb", "page=" + url); view.evaluateJavascript("window.dispatchEvent(new Event('android-incoming-file'))", null); }
             @Override public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) { Log.e("JuitarWeb", errorCode + " " + description + " " + failingUrl); }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -65,6 +72,8 @@ public final class MainActivity extends Activity {
                 catch (Exception error) { Log.e("JuitarWeb", "file chooser=" + error); fileChooserCallback = null; return false; }
             }
         });
+        prepareIncomingFile(getIntent());
+        webView.addJavascriptInterface(new IncomingFileBridge(), "JuitarAndroid");
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -76,6 +85,31 @@ public final class MainActivity extends Activity {
         webView.setBackgroundColor(0xFF0D0E11);
         webView.loadUrl("https://appassets.androidplatform.net/assets/dist/index.html");
         setContentView(webView);
+    }
+    private void prepareIncomingFile(Intent intent) {
+        Uri uri = intent == null ? null : intent.getData();
+        if (uri == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
+        try {
+            InputStream input = getContentResolver().openInputStream(uri);
+            if (input == null) return;
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192]; int count;
+            while ((count = input.read(chunk)) != -1) buffer.write(chunk, 0, count);
+            input.close(); incomingBytes = buffer.toByteArray();
+            String name = null;
+            Cursor cursor = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null);
+            if (cursor != null) { if (cursor.moveToFirst()) name = cursor.getString(0); cursor.close(); }
+            if (name != null && !name.isEmpty()) incomingName = name;
+            String mime = getContentResolver().getType(uri); if (mime != null) incomingMime = mime;
+            Log.i("JuitarWeb", "incoming=" + incomingName + " bytes=" + incomingBytes.length);
+        } catch (Exception error) { Log.e("JuitarWeb", "incoming file=" + error); incomingBytes = null; }
+    }
+    private final class IncomingFileBridge {
+        @JavascriptInterface public boolean hasIncomingFile() { return incomingBytes != null && incomingBytes.length > 0; }
+        @JavascriptInterface public String incomingBase64() { return incomingBytes == null ? "" : Base64.encodeToString(incomingBytes, Base64.NO_WRAP); }
+        @JavascriptInterface public String incomingName() { return incomingName; }
+        @JavascriptInterface public String incomingMime() { return incomingMime; }
+        @JavascriptInterface public void consumeIncomingFile() { incomingBytes = null; }
     }
     private WebResourceResponse assetResponse(String path) {
         try {
