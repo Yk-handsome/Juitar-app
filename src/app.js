@@ -187,6 +187,7 @@ function enablePinchZoom(stage, image) {
   })
   const clear = (event) => { delete stage._pointers[event.pointerId]; if (Object.keys(stage._pointers).length < 2) { state.pinch.active = false; song.imageScale = scale; saveSongs() } }
   stage.addEventListener('pointerup', clear); stage.addEventListener('pointercancel', clear); stage.addEventListener('pointerleave', clear)
+  stage.addEventListener('dblclick', () => { scale = 1; image.style.transform = 'scale(1)'; song.imageScale = 1; saveSongs(); setStatus('已恢复适应宽度') })
 }
 function appendImagePage(page, blob, index) {
   const stage = document.createElement('section'); stage.className = 'score-page image-stage'; stage.dataset.pageId = page.id
