@@ -151,7 +151,7 @@ function destroyApi() { if (state.api && typeof state.api.destroy === 'function'
 function clearScore() { destroyApi(); revokeObjectUrls(); revokePageStripUrls(); els.host.replaceChildren(); els.host.className = 'score-host'; els.pageStrip.hidden = true; els.pageStrip.replaceChildren(); state.hasVector = false; state.playing = false; els.player.hidden = true; state.renderToken += 1 }
 function touchSong(song) { song.lastOpenedAt = Date.now(); song.updatedAt = Date.now(); saveSongs() }
 function syncSongMeta() { const song = currentSong(); els.author.value = song.author || ''; els.tuning.value = song.tuning || 'Standard'; els.capo.value = song.capo || 0; els.defaultBpm.value = song.defaultBpm || 90 }
-function setSong(song) { state.currentSongId = song.id; state.currentPageId = song.lastPageId || null; touchSong(song); setTitle(song.title); els.noteEditor.value = song.note || ''; syncSongMeta(); renderLibrary() }
+function setSong(song) { state.currentSongId = song.id; state.currentPageId = song.lastPageId || null; state.bpm = Number(song.defaultBpm) || 90; els.bpm.textContent = state.bpm + ' BPM'; touchSong(song); setTitle(song.title); els.noteEditor.value = song.note || ''; syncSongMeta(); renderLibrary() }
 function updateProgress() {
   const pages = Array.from(els.host.querySelectorAll('.score-page'))
   if (!pages.length) { els.progress.textContent = '暂无谱页'; return }
@@ -408,7 +408,7 @@ async function createNewSong() {
 }
 function saveNote() { const song = currentSong(); song.note = els.noteEditor.value; song.updatedAt = Date.now(); saveSongs(); document.querySelector('#noteSaved').textContent = '已保存'; clearTimeout(saveNote.timer); saveNote.timer = setTimeout(() => { document.querySelector('#noteSaved').textContent = '自动保存' }, 900) }
 function restoreLastPosition() { const song = currentSong(); const target = song.lastPageId && els.host.querySelector('[data-page-id="' + song.lastPageId + '"]'); if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); else els.scroll.scrollTo({ top: song.lastScrollTop || 0, behavior: 'smooth' }); closeNotes() }
-function setBpm(value) { state.bpm = Math.max(40, Math.min(220, value)); els.bpm.textContent = state.bpm + ' BPM'; if (state.api) state.api.playbackSpeed = state.bpm / 90 }
+function setBpm(value) { state.bpm = Math.max(40, Math.min(220, value)); const song = currentSong(); song.defaultBpm = state.bpm; song.updatedAt = Date.now(); els.bpm.textContent = state.bpm + ' BPM'; saveSongs(); if (state.api) state.api.playbackSpeed = state.bpm / 90 }
 
 document.querySelector('#importButton').addEventListener('click', () => els.file.click())
 els.file.addEventListener('change', (event) => { const files = Array.from(event.target.files || []); event.target.value = ''; if (files.length) openImportPreview(files) })
