@@ -26,6 +26,10 @@ npm run dev -- --host 127.0.0.1
 
 **[DEVELOPMENT.md](DEVELOPMENT.md)**
 
+产品闭环路线、验收矩阵、风险和后续版本计划：
+
+**[QUALITY_PLAN.md](QUALITY_PLAN.md)**
+
 产品截图、实战验收和版本记录请阅读：
 
 **[PRODUCT_SHOWCASE.md](PRODUCT_SHOWCASE.md)**
