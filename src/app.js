@@ -421,12 +421,15 @@ setSong(currentSong())
 renderSong(currentSong())
 
 function openIncomingAndroidFile() {
-  if (!window.JuitarAndroid?.hasIncomingFile()) return
+  if (!window.JuitarAndroid || !window.JuitarAndroid.incomingCount || window.JuitarAndroid.incomingCount() < 1) return
   try {
-    const base64 = window.JuitarAndroid.incomingBase64(); const raw = atob(base64); const bytes = new Uint8Array(raw.length)
-    for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index)
-    const file = new File([bytes], window.JuitarAndroid.incomingName(), { type: window.JuitarAndroid.incomingMime() || 'application/octet-stream' })
-    window.JuitarAndroid.consumeIncomingFile(); openImportPreview([file])
+    const files = []
+    for (let fileIndex = 0; fileIndex < window.JuitarAndroid.incomingCount(); fileIndex += 1) {
+      const base64 = window.JuitarAndroid.incomingBase64At(fileIndex); const raw = atob(base64); const bytes = new Uint8Array(raw.length)
+      for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index)
+      files.push(new File([bytes], window.JuitarAndroid.incomingNameAt(fileIndex), { type: window.JuitarAndroid.incomingMimeAt(fileIndex) || 'application/octet-stream' }))
+    }
+    window.JuitarAndroid.consumeIncomingFile(); openImportPreview(files)
   } catch (error) { setStatus('无法打开系统分享的文件：' + error.message, true) }
 }
 window.addEventListener('android-incoming-file', openIncomingAndroidFile)

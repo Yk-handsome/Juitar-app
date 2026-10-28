@@ -28,6 +28,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import android.util.Base64;
 import android.database.Cursor;
 import android.provider.OpenableColumns;
@@ -38,9 +40,9 @@ public final class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 7107;
     private ServerSocket server;
     private Thread serverThread;
-    private byte[] incomingBytes;
-    private String incomingName = "imported-score";
-    private String incomingMime = "application/octet-stream";
+    private final List<byte[]> incomingBytes = new ArrayList<>();
+    private final List<String> incomingNames = new ArrayList<>();
+    private final List<String> incomingMimes = new ArrayList<>();
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         WebView.setWebContentsDebuggingEnabled(true);
@@ -88,25 +90,37 @@ public final class MainActivity extends Activity {
     }
     private void prepareIncomingFile(Intent intent) {
         Uri uri = intent == null ? null : intent.getData();
-        if (intent != null && Intent.ACTION_SEND.equals(intent.getAction())) {
-            if (intent.getClipData() != null && intent.getClipData().getItemCount() > 0) uri = intent.getClipData().getItemAt(0).getUri();
-            if (uri == null) uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        if (intent != null && (Intent.ACTION_SEND.equals(intent.getAction()) || Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction()))) {
+            incomingBytes.clear(); incomingNames.clear(); incomingMimes.clear();
+            if (intent.getClipData() != null && intent.getClipData().getItemCount() > 0) {
+                for (int i = 0; i < intent.getClipData().getItemCount(); i++) readIncomingUri(intent.getClipData().getItemAt(i).getUri());
+            } else if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
+                ArrayList<Uri> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+                if (uris != null) for (Uri item : uris) readIncomingUri(item);
+            } else {
+                uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                if (uri != null) readIncomingUri(uri);
+            }
+            return;
         }
-        if (uri == null || !(Intent.ACTION_VIEW.equals(intent.getAction()) || Intent.ACTION_SEND.equals(intent.getAction()))) return;
+        if (uri == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
+        incomingBytes.clear(); incomingNames.clear(); incomingMimes.clear(); readIncomingUri(uri);
+    }
+    private void readIncomingUri(Uri uri) {
         try {
             InputStream input = getContentResolver().openInputStream(uri);
             if (input == null) return;
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             byte[] chunk = new byte[8192]; int count;
             while ((count = input.read(chunk)) != -1) buffer.write(chunk, 0, count);
-            input.close(); incomingBytes = buffer.toByteArray();
+            input.close(); incomingBytes.add(buffer.toByteArray());
             String name = null;
             Cursor cursor = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null);
             if (cursor != null) { if (cursor.moveToFirst()) name = cursor.getString(0); cursor.close(); }
-            if (name != null && !name.isEmpty()) incomingName = name;
-            String mime = getContentResolver().getType(uri); if (mime != null) incomingMime = mime;
-            Log.i("JuitarWeb", "incoming=" + incomingName + " bytes=" + incomingBytes.length);
-        } catch (Exception error) { Log.e("JuitarWeb", "incoming file=" + error); incomingBytes = null; }
+            incomingNames.add(name == null || name.isEmpty() ? "imported-score" : name);
+            String mime = getContentResolver().getType(uri); incomingMimes.add(mime == null ? "application/octet-stream" : mime);
+            Log.i("JuitarWeb", "incoming=" + incomingNames.get(incomingNames.size() - 1) + " bytes=" + incomingBytes.get(incomingBytes.size() - 1).length);
+        } catch (Exception error) { Log.e("JuitarWeb", "incoming file=" + error); }
     }
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -115,11 +129,11 @@ public final class MainActivity extends Activity {
         if (webView != null) webView.evaluateJavascript("window.dispatchEvent(new Event('android-incoming-file'))", null);
     }
     private final class IncomingFileBridge {
-        @JavascriptInterface public boolean hasIncomingFile() { return incomingBytes != null && incomingBytes.length > 0; }
-        @JavascriptInterface public String incomingBase64() { return incomingBytes == null ? "" : Base64.encodeToString(incomingBytes, Base64.NO_WRAP); }
-        @JavascriptInterface public String incomingName() { return incomingName; }
-        @JavascriptInterface public String incomingMime() { return incomingMime; }
-        @JavascriptInterface public void consumeIncomingFile() { incomingBytes = null; }
+        @JavascriptInterface public int incomingCount() { return incomingBytes.size(); }
+        @JavascriptInterface public String incomingBase64At(int index) { return index >= 0 && index < incomingBytes.size() ? Base64.encodeToString(incomingBytes.get(index), Base64.NO_WRAP) : ""; }
+        @JavascriptInterface public String incomingNameAt(int index) { return index >= 0 && index < incomingNames.size() ? incomingNames.get(index) : "imported-score"; }
+        @JavascriptInterface public String incomingMimeAt(int index) { return index >= 0 && index < incomingMimes.size() ? incomingMimes.get(index) : "application/octet-stream"; }
+        @JavascriptInterface public void consumeIncomingFile() { incomingBytes.clear(); incomingNames.clear(); incomingMimes.clear(); }
     }
     private WebResourceResponse assetResponse(String path) {
         try {
