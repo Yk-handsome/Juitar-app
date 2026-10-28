@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "verify:release": "node scripts/verify-release.mjs",
+    "verify:android": "powershell -ExecutionPolicy Bypass -File scripts/verify-android.ps1",
     "test:watch": "vitest",
     "tauri": "tauri",
     "tauri:build": "tauri build"
