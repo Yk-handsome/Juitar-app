@@ -19,11 +19,12 @@ if (!$deviceLine) { throw 'NO_ONLINE_ANDROID_DEVICE' }
 Start-Sleep -Seconds 4
 $version = & $adb @target shell dumpsys package com.juitar.app | Select-String -Pattern 'versionCode=|versionName='
 $logs = & $adb @target logcat -d -s JuitarWeb '*:S'
-if ($logs -match 'FileNotFoundException.*worker|FileNotFoundException.*pdf.worker|onReceivedError|谱面错误') {
+$logsText = $logs -join [Environment]::NewLine
+if ($logsText -match 'FileNotFoundException.*worker|FileNotFoundException.*pdf.worker|onReceivedError|谱面错误') {
   $logs | Out-Host
   throw 'ANDROID_RUNTIME_ASSET_ERROR'
 }
-if ($logs -notmatch 'page=.*assets/dist/index\.html') {
+if ($logsText -notmatch 'page=.*dist/index\.html') {
   $logs | Out-Host
   throw 'ANDROID_PAGE_NOT_CONFIRMED'
 }
