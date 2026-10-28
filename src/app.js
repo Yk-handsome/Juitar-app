@@ -183,8 +183,8 @@ async function appendPdfPage(page, blob, index) {
   const stage = document.createElement('section'); stage.className = 'score-page pdf-stage'; stage.dataset.pageId = page.id
   const label = document.createElement('div'); label.className = 'page-label'; label.textContent = '第 ' + (index + 1) + ' 页 · PDF'
   stage.append(label); els.host.append(stage)
-  if (!state.pdfjsPromise) state.pdfjsPromise = import(assetUrl('pdfjs/pdf.min.mjs'))
-  const pdfjs = await state.pdfjsPromise; pdfjs.GlobalWorkerOptions.workerSrc = assetUrl('pdfjs/pdf.worker.min.mjs')
+  if (!state.pdfjsPromise) state.pdfjsPromise = window.pdfjsReady || new Promise((resolve) => window.addEventListener('pdfjs-ready', () => resolve(window.pdfjsReady), { once: true }))
+  const pdfjs = await state.pdfjsPromise
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const pdfPage = await pdf.getPage(pageNumber); const base = pdfPage.getViewport({ scale: 1 }); const scale = Math.max(1, (els.scroll.clientWidth - 8) / base.width); const viewport = pdfPage.getViewport({ scale })
