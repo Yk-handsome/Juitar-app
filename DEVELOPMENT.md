@@ -15,7 +15,7 @@ index.html
 核心视图：
 
 - 看谱：全宽连续显示当前曲目的多张图片谱、PDF 或 alphaTab 真谱页。
-- 笔记：默认隐藏的当前曲目底部抽屉，自动保存文本；点击 [m:8] 回到谱面对应小节。
+- 笔记：默认隐藏的当前曲目底部抽屉，自动保存文本；阅读页码和滚动位置由 APP 自动记忆。
 - Android：android-lite/MainActivity.java 提供 WebView、资源拦截和系统文件选择器。
 
 参考项目位于 `F:/Code_listary/Juitar/reference project`：
